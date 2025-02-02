@@ -1,0 +1,14 @@
+saur_client@git+https://github.com/cekage/Saur_fr_client.git@main
+pylint==3.3.3
+ruff==0.9.3
+flake8==7.1.1
+pytest==8.3.3
+pytest-mock==3.14.0
+pytest-cov==6.0.0
+black==24.10.0
+isort==5.13.2
+mypy==1.14.1
+pytest-homeassistant-custom-component==0.13.195
+uvicorn==0.34.0
+fastapi==0.115.7
+pre_commit==4.1.0

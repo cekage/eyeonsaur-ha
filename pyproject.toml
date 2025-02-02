@@ -1,0 +1,67 @@
+[project]
+name = "eyeonsaur"
+version = "1.1.0"
+description = "Intégration Saur.fr pour Home Assistant"
+
+dependencies = [
+    "saur_client@git+https://github.com/cekage/Saur_fr_client.git@67a462487f5219767e6f33fad72a96f7da0d9fa7"
+]
+
+[tool.ruff]
+line-length = 80
+target-version = "py312"
+lint.select = [
+    "E", "F", "W",  # Erreurs, conventions de style, avertissements
+    "I",          # Importation et ordre (remplace pylint pour les imports)
+    "UP",           # Modernité Python (pyupgrade)
+    "ASYNC",        # Vérifications async
+    "RUF",          # Règles spécifiques à Ruff
+    "PLC", "PLE", "PLR", "PLW", #Pylint
+    "B", # Black
+    "C4", # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "PD9", # pandas-vet
+    "PT", # flake8-pytest-style
+    "S", # flake8-bandit,cl
+    "TCH" # typeguard
+]
+lint.ignore = [
+    "PLC0414",
+    "PLW0603",
+    "D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202", "D203", "D205", "D212", "D213", "D400", "D401", "D415", "D416", "D417",
+    "S101", "S105", "S106", "S107", "S311",
+    "TC001", "TC002", "TC003", "TC004",
+]
+
+[tool.pytest.ini_options]
+addopts = "--cov=eyeonsaur --cov-report=xml:coverage.xml --cov-report term-missing -v -rsxX --log-cli-level=1 --import-mode=importlib"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["custom_components"]
+asyncio_default_fixture_loop_scope = "function"
+
+
+[tool.coverage.run]
+source = ["eyeonsaur"]
+omit = [
+    "**/__pycache__",
+    "tests/**"
+]
+
+[tool.isort]
+profile = "black"
+line_length = 80
+
+[tool.ruff.lint.isort]
+known-first-party = ["eyeonsaur"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+
+[tool.black]
+line-length = 80
+
+[tool.ruff.lint.per-file-ignores]
+"tests/mock/*.py" = ["ASYNC230"]
+"tests/*.py" = ["B904"]

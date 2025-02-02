@@ -1,0 +1,34 @@
+{
+    "config": {
+      "step": {
+        "user": {
+          "description": "⚠️ Cette intégration n'est **PAS** une application officielle de Saur. ⚠️\n\nElle a été développée par un contributeur indépendant et n'est pas affiliée à Saur ni approuvée par eux.\nL'utilisation de cette intégration peut être soumise aux conditions d'utilisation de Saur.",
+          "data": {
+            "email": "Entrez votre identifiant SAUR (email)",
+            "password": "Entrez votre mot de passe SAUR",
+            "discovery": "Je comprends et j'accepte que cette intégration ne soit pas officielle"
+          }
+        }
+      },
+      "error": {
+        "invalid_email": "Format d'email invalide",
+        "cannot_connect": "Impossible de se connecter à l'API SAUR",
+        "unknown": "Erreur inconnue"
+      },
+      "abort": {
+        "already_configured": "L'intégration est déjà configurée pour ce compte",
+        "reauth_successful": "L'authentification a été mise à jour avec succès."
+      }
+    },
+    "options": {
+      "step": {
+        "init": {
+          "description": "Configurez les options de l'intégration EyeOnSaur.",
+          "data": {
+            "water_m3_price": "Coût du m³ d'eau (en €)",
+            "hours_between_reading": "Nombre d'heures entre deux relevés dans l'historique"
+          }
+        }
+      }
+    }
+  }
