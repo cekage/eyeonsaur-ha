@@ -1,6 +1,6 @@
 [project]
 name = "eyeonsaur"
-version = "1.1.0"
+version = "1.1.1"
 description = "Intégration Saur.fr pour Home Assistant"
 
 dependencies = [
