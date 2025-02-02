@@ -83,10 +83,14 @@ class SaurCoordinator(DataUpdateCoordinator):
                 "trueRegistrationNumber",
             ),
         }
+        self.hass.async_create_task(self._async_update_data())
         await super().async_config_entry_first_refresh()
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from the API and update the database."""
+        _LOGGER.debug(
+            "🔥🔥🔥🔥🔥🔥 _async_update_data 🔥🔥🔥🔥🔥🔥",
+        )
         await self._async_fetch_last_known_data()
         await self._async_fetch_missing_data()
         return self.base_data
@@ -95,7 +99,7 @@ class SaurCoordinator(DataUpdateCoordinator):
         """Fetch the last known data from the API."""
         last_known_data = await self.client.get_lastknown_data()
         _LOGGER.debug(
-            "🔥🔥 _async_update_data last_known_data %s 🔥🔥",
+            "🔥🔥 _async_fetch_last_known_data %s 🔥🔥",
             last_known_data,
         )
 
