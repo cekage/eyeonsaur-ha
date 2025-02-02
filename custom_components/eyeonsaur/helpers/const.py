@@ -19,7 +19,7 @@ from homeassistant.const import (
 DOMAIN: Final = "eyeonsaur"
 PLATFORMS: Final = ["sensor"]
 
-DEV: Final = 0
+DEV: Final = 1
 
 DEFAULT_POLLING_INTERVAL = timedelta(days=1)
 DEV_POLLING_INTERVAL = timedelta(seconds=30)

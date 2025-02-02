@@ -1,7 +1,8 @@
 """Config flow pour l'intégration EyeOnSaur."""
 
 import logging
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
@@ -16,13 +17,10 @@ from .helpers.const import (
     DOMAIN,
     ENTRY_ABSOLUTE_CONSUMPTION,
     ENTRY_CREATED_AT,
-    ENTRY_LOGIN,
     ENTRY_MANUFACTURER,
     ENTRY_MODEL,
-    ENTRY_PASS,
     ENTRY_SERIAL_NUMBER,
     ENTRY_TOKEN,
-    ENTRY_UNDERSTAND,
     ENTRY_UNIQUE_ID,
 )
 
@@ -45,6 +43,7 @@ STEP_OPTIONS_DATA_SCHEMA = vol.Schema(
     }
 )
 
+
 class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow pour l'intégration EyeOnSaur."""
 
@@ -64,7 +63,9 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             # Validation des données utilisateur
-            errors = await self.validate_input(user_input, STEP_USER_DATA_SCHEMA)
+            errors = await self.validate_input(
+                user_input, STEP_USER_DATA_SCHEMA
+            )
             if not errors:
                 self._user_input.update(user_input)
 
@@ -80,7 +81,9 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     await self.client.authenticate()
                     _LOGGER.debug("auth_result = %s", self.client.access_token)
                 except Exception as e:
-                    _LOGGER.exception("Erreur lors de l'authentification : %s", e)
+                    _LOGGER.exception(
+                        "Erreur lors de l'authentification : %s", e
+                    )
                     errors["base"] = "cannot_connect"
 
                 if not errors:
@@ -94,13 +97,15 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
                     self._user_input[ENTRY_UNIQUE_ID] = unique_id
 
-                    deliverypoints = await self.client.get_deliverypoints_data()
+                    deliverypoints = (
+                        await self.client.get_deliverypoints_data()
+                    )
                     self._user_input[ENTRY_MANUFACTURER] = deliverypoints.get(
                         "meter", {}
                     ).get("meterBrandCode")
-                    self._user_input[ENTRY_MODEL] = deliverypoints.get("meter", {}).get(
-                        "meterModelCode"
-                    )
+                    self._user_input[ENTRY_MODEL] = deliverypoints.get(
+                        "meter", {}
+                    ).get("meterModelCode")
                     self._user_input[ENTRY_SERIAL_NUMBER] = deliverypoints.get(
                         "meter", {}
                     ).get("trueRegistrationNumber")
@@ -109,7 +114,9 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ).get("installationDate")
 
                     self._user_input[ENTRY_ABSOLUTE_CONSUMPTION] = None
-                    integration = await async_get_integration(self.hass, DOMAIN)
+                    integration = await async_get_integration(
+                        self.hass, DOMAIN
+                    )
 
                     # Création ou mise à jour de l'entrée
                     if not self._reauth_entry:
@@ -119,10 +126,16 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         )
                     else:
                         self.hass.config_entries.async_update_entry(
-                            self._reauth_entry, data={**self._reauth_entry.data, **self._user_input}
+                            self._reauth_entry,
+                            data={
+                                **self._reauth_entry.data,
+                                **self._user_input,
+                            },
                         )
                         self.hass.async_create_task(
-                            self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
+                            self.hass.config_entries.async_reload(
+                                self._reauth_entry.entry_id
+                            )
                         )
                         return self.async_abort(reason="reauth_successful")
 
@@ -133,7 +146,9 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_reauth(self, entry_data: Mapping[str, Any]) -> FlowResult:
+    async def async_step_reauth(
+        self, entry_data: Mapping[str, Any]
+    ) -> FlowResult:
         """Handle reauthentication."""
         self._reauth_entry = self.hass.config_entries.async_get_entry(
             self.context["entry_id"]
@@ -141,7 +156,9 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._user_input = entry_data
         return await self.async_step_user()
 
-    async def validate_input(self, data: dict[str, Any], schema: vol.Schema) -> dict[str, Any]:
+    async def validate_input(
+        self, data: dict[str, Any], schema: vol.Schema
+    ) -> dict[str, Any]:
         """Validate the user input allows us to connect.
 
         Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
@@ -155,7 +172,9 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Gestion des erreurs de validation
             for error in er.errors:
                 if isinstance(error, vol.Invalid) and error.path == ["email"]:
-                    errors["base"] = "invalid_email"  # Message d'erreur pour email invalide
+                    errors["base"] = (
+                        "invalid_email"  # Message d'erreur pour email invalide
+                    )
                 elif isinstance(error, vol.RequiredFieldInvalid):
                     errors[error.path[0]] = "required"
                 else:
@@ -172,6 +191,7 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Create the options flow."""
         return OptionsFlowHandler(config_entry)
 
+
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handles options flow for the component."""
 
@@ -185,7 +205,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             # Mettre à jour les options de l'entrée de configuration
             self.hass.config_entries.async_update_entry(
-                self.config_entry, options={**self.config_entry.options, **user_input}
+                self.config_entry,
+                options={**self.config_entry.options, **user_input},
             )
             return self.async_create_entry(title="", data=user_input)
 
@@ -195,8 +216,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             data_schema=STEP_OPTIONS_DATA_SCHEMA,
         )
 
+
 class CannotConnect(HomeAssistantError):
     """Error to indicate we cannot connect."""
+
 
 class InvalidAuth(HomeAssistantError):
     """Error to indicate there is invalid auth."""
