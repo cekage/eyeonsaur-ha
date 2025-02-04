@@ -1,11 +1,16 @@
 """Module définissant la classe SaurDevice pour l'intégration EyeOnSaur."""
 
+import logging
+
 from homeassistant.helpers.device_registry import DeviceEntryType
 from homeassistant.helpers.entity import DeviceInfo
 
 from .helpers.const import (
     DOMAIN,
 )
+
+_LOGGER = logging.getLogger(__name__)
+_LOGGER.setLevel(logging.DEBUG)
 
 
 class SaurDevice:

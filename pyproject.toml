@@ -4,7 +4,7 @@ version = "1.1.2"
 description = "Intégration Saur.fr pour Home Assistant"
 
 dependencies = [
-    "saur_client@git+https://github.com/cekage/Saur_fr_client.git@67a462487f5219767e6f33fad72a96f7da0d9fa7"
+    "saur_client@git+https://github.com/cekage/Saur_fr_client.git@0.2.3"
 ]
 
 [tool.ruff]

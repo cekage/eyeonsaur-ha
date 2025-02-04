@@ -8,7 +8,8 @@ from datetime import datetime
 from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.ERROR)
+_LOGGER.setLevel(logging.DEBUG)
+
 
 DB_FILE = "consommation_saur.db"
 
@@ -222,19 +223,15 @@ class SaurDatabaseHelper:
                 c.date,
                 CASE
                     WHEN c.date = anchor.anchor_date
-                    THEN anchor.anchor_value + c.relative_value
+                    THEN anchor.anchor_value  -- On utilise uniquement la valeur absolue de l'ancre
                     WHEN c.date > anchor.anchor_date
                     THEN
                         anchor.anchor_value + COALESCE((
                             SELECT SUM(relative_value)
                             FROM consumptions
-                            WHERE date > anchor.anchor_date
+                            WHERE date >= anchor.anchor_date  -- On inclut la date de l'ancre dans la somme
                             AND date <= c.date
-                        ), 0) + (
-                            SELECT relative_value
-                            FROM consumptions
-                            WHERE date = anchor.anchor_date
-                        )
+                        ), 0)
                     WHEN c.date < anchor.anchor_date
                     THEN
                         anchor.anchor_value - COALESCE((

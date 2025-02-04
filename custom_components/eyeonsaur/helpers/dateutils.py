@@ -1,6 +1,10 @@
 """Date manipulator for the EyeOnSaur integration."""
 
+import logging
 from datetime import datetime, timedelta
+
+_LOGGER = logging.getLogger(__name__)
+_LOGGER.setLevel(logging.DEBUG)
 
 
 def find_missing_dates(

@@ -4,33 +4,37 @@ import logging
 from collections.abc import Mapping
 from typing import Any
 
+import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.loader import async_get_integration
-from saur_client import SaurClient
+from saur_client import SaurApiError, SaurClient
 
 from .helpers.const import (
     DEV,
     DOMAIN,
     ENTRY_ABSOLUTE_CONSUMPTION,
     ENTRY_CREATED_AT,
+    ENTRY_LOGIN,
     ENTRY_MANUFACTURER,
     ENTRY_MODEL,
+    ENTRY_PASS,
     ENTRY_SERIAL_NUMBER,
     ENTRY_TOKEN,
     ENTRY_UNIQUE_ID,
 )
 
 _LOGGER = logging.getLogger(__name__)
+_LOGGER.setLevel(logging.DEBUG)
 
 # Schema for initial configuration step (user step)
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required("email"): str,
-        vol.Required("password"): str,
+        vol.Required(ENTRY_LOGIN): str,
+        vol.Required(ENTRY_PASS): str,
         vol.Required("discovery", default=False): bool,
     }
 )
@@ -59,92 +63,106 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Gère l'étape initiale du config flow (déclenchée par l'utilisateur)."""
-        errors: dict[str, str] = {}
-        if user_input is not None:
-            # Validation des données utilisateur
-            errors = await self.validate_input(
-                user_input, STEP_USER_DATA_SCHEMA
+        """Gère l'étape initiale du config flow
+        (déclenchée par l'utilisateur)."""
+
+        if user_input is None:
+            return self.async_show_form(
+                step_id="user",
+                data_schema=STEP_USER_DATA_SCHEMA,
+                errors={},
             )
-            if not errors:
-                self._user_input.update(user_input)
 
-                # Initialisation du client
-                self.client = SaurClient(
-                    login=user_input["email"],
-                    password=user_input["password"],
-                    dev_mode=DEV == 1,
-                )
+        errors = await self.validate_input(user_input, STEP_USER_DATA_SCHEMA)
+        if errors:
+            return self.async_show_form(
+                step_id="user",
+                data_schema=STEP_USER_DATA_SCHEMA,
+                errors=errors,
+                description_placeholders={
+                    "error_detail": str(err) if "err" in locals() else ""
+                },
+            )
 
-                # Test de connexion
-                try:
-                    await self.client.authenticate()
-                    _LOGGER.debug("auth_result = %s", self.client.access_token)
-                except Exception as e:
-                    _LOGGER.exception(
-                        "Erreur lors de l'authentification : %s", e
-                    )
-                    errors["base"] = "cannot_connect"
+        self._user_input.update(user_input)
 
-                if not errors:
-                    # Récupération des informations de l'utilisateur
-                    self._user_input[ENTRY_TOKEN] = self.client.access_token
-                    unique_id = self.client.default_section_id
-
-                    if not self._reauth_entry:
-                        await self.async_set_unique_id(unique_id)
-                        self._abort_if_unique_id_configured()
-
-                    self._user_input[ENTRY_UNIQUE_ID] = unique_id
-
-                    deliverypoints = (
-                        await self.client.get_deliverypoints_data()
-                    )
-                    self._user_input[ENTRY_MANUFACTURER] = deliverypoints.get(
-                        "meter", {}
-                    ).get("meterBrandCode")
-                    self._user_input[ENTRY_MODEL] = deliverypoints.get(
-                        "meter", {}
-                    ).get("meterModelCode")
-                    self._user_input[ENTRY_SERIAL_NUMBER] = deliverypoints.get(
-                        "meter", {}
-                    ).get("trueRegistrationNumber")
-                    self._user_input[ENTRY_CREATED_AT] = deliverypoints.get(
-                        "meter", {}
-                    ).get("installationDate")
-
-                    self._user_input[ENTRY_ABSOLUTE_CONSUMPTION] = None
-                    integration = await async_get_integration(
-                        self.hass, DOMAIN
-                    )
-
-                    # Création ou mise à jour de l'entrée
-                    if not self._reauth_entry:
-                        return self.async_create_entry(
-                            title=f"{integration.name} - {self._user_input[ENTRY_UNIQUE_ID]}",
-                            data=self._user_input,
-                        )
-                    else:
-                        self.hass.config_entries.async_update_entry(
-                            self._reauth_entry,
-                            data={
-                                **self._reauth_entry.data,
-                                **self._user_input,
-                            },
-                        )
-                        self.hass.async_create_task(
-                            self.hass.config_entries.async_reload(
-                                self._reauth_entry.entry_id
-                            )
-                        )
-                        return self.async_abort(reason="reauth_successful")
-
-        # Affichage du formulaire (initial ou avec erreurs) avec description
-        return self.async_show_form(
-            step_id="user",
-            data_schema=STEP_USER_DATA_SCHEMA,
-            errors=errors,
+        # Initialisation du client
+        self.client = SaurClient(
+            login=user_input[ENTRY_LOGIN],
+            password=user_input[ENTRY_PASS],
+            dev_mode=DEV == 1,
         )
+
+        try:
+            # Appel à l'API AVANT de récupérer l'ID
+            deliverypoints = await self.client.get_deliverypoints_data()
+
+            # Récupération des informations de l'utilisateur APRÈS l'appel à l'API
+            unique_id = self.client.default_section_id
+            self._user_input[ENTRY_UNIQUE_ID] = unique_id
+            self._user_input[ENTRY_TOKEN] = self.client.access_token
+            self._user_input[ENTRY_ABSOLUTE_CONSUMPTION] = None
+
+            self._user_input[ENTRY_MANUFACTURER] = deliverypoints.get(
+                "meter", {}
+            ).get("meterBrandCode")
+            self._user_input[ENTRY_MODEL] = deliverypoints.get(
+                "meter", {}
+            ).get("meterModelCode")
+            self._user_input[ENTRY_SERIAL_NUMBER] = deliverypoints.get(
+                "meter", {}
+            ).get("trueRegistrationNumber")
+            self._user_input[ENTRY_CREATED_AT] = deliverypoints.get(
+                "meter", {}
+            ).get("installationDate")
+
+            integration = await async_get_integration(self.hass, DOMAIN)
+
+            if not self._reauth_entry:
+                # Création de l'entrée avec token et unique_id
+                return self.async_create_entry(
+                    title=f"{integration.name} - {unique_id}",
+                    data=self._user_input,
+                )
+            else:
+                # Mise à jour de l'entrée existante avec le nouveau token
+                self.hass.config_entries.async_update_entry(
+                    self._reauth_entry, data=self._user_input
+                )
+                await self.hass.config_entries.async_reload(
+                    self._reauth_entry.entry_id
+                )
+                return self.async_abort(reason="reauth_successful")
+
+        except SaurApiError as err:
+            _LOGGER.exception(
+                "Erreur lors de la récupération des données: %s", err
+            )
+            # On infère le type d'erreur à partir du message.
+            if "401" in str(err) or "403" in str(err):
+                errors["base"] = "cannot_connect"
+            else:
+                errors["base"] = "unknown"
+
+            return self.async_show_form(
+                step_id="user",
+                data_schema=STEP_USER_DATA_SCHEMA,
+                errors=errors,
+                description_placeholders={"error_detail": str(err)},
+            )
+        except aiohttp.client_exceptions.ClientConnectorError as err:
+            _LOGGER.exception(
+                "Erreur de connexion lors de la récupération des données: %s",
+                err,
+            )
+            errors["base"] = "cannot_connect"
+
+            return self.async_show_form(
+                step_id="user",
+                data_schema=STEP_USER_DATA_SCHEMA,
+                errors=errors,
+                description_placeholders={"error_detail": str(err)},
+            )
 
     async def async_step_reauth(
         self, entry_data: Mapping[str, Any]
@@ -153,15 +171,15 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._reauth_entry = self.hass.config_entries.async_get_entry(
             self.context["entry_id"]
         )
-        self._user_input = entry_data
-        return await self.async_step_user()
+        return await self.async_step_user(user_input=entry_data)
 
     async def validate_input(
         self, data: dict[str, Any], schema: vol.Schema
     ) -> dict[str, Any]:
         """Validate the user input allows us to connect.
 
-        Data has the keys from STEP_USER_DATA_SCHEMA with values provided by the user.
+        Data has the keys from STEP_USER_DATA_SCHEMA
+        with values provided by the user.
         """
         errors = {}
         try:
@@ -171,10 +189,11 @@ class EyeOnSaurConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         except vol.MultipleInvalid as er:
             # Gestion des erreurs de validation
             for error in er.errors:
-                if isinstance(error, vol.Invalid) and error.path == ["email"]:
-                    errors["base"] = (
-                        "invalid_email"  # Message d'erreur pour email invalide
-                    )
+                if isinstance(error, vol.Invalid) and error.path == [
+                    ENTRY_LOGIN
+                ]:
+                    # Message d'erreur pour email invalide
+                    errors["base"] = "invalid_email"
                 elif isinstance(error, vol.RequiredFieldInvalid):
                     errors[error.path[0]] = "required"
                 else:
@@ -205,8 +224,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             # Mettre à jour les options de l'entrée de configuration
             self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                options={**self.config_entry.options, **user_input},
+                self._config_entry,
+                options={**self._config_entry.options, **user_input},
             )
             return self.async_create_entry(title="", data=user_input)
 
