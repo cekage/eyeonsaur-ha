@@ -1,11 +1,11 @@
 [project]
 name = "eyeonsaur"
-version = "1.1.2"
+version = "1.1.4"
 description = "Intégration Saur.fr pour Home Assistant"
 
-dependencies = [
-    "saur_client@git+https://github.com/cekage/Saur_fr_client.git@0.2.3"
-]
+# dependencies = [
+#    "saur_client@git+https://github.com/cekage/Saur_fr_client.git@0.2.4"
+# ]
 
 [tool.ruff]
 line-length = 80

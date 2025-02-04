@@ -122,7 +122,9 @@ async def test_async_get_all_consumptions_with_absolute(
 async def test_async_execute_query_exception(db_helper: SaurDatabaseHelper):
     """Test that async_execute_query raises SaurDatabaseError on query error."""
     with pytest.raises(SaurDatabaseError, match="no such table"):
-        await db_helper._async_execute_query("SELECT * FROM non_existent_table")
+        await db_helper._async_execute_query(
+            "SELECT * FROM non_existent_table"
+        )
 
 
 # Assurez-vous de supprimer le fichier de base de données après tous les tests
