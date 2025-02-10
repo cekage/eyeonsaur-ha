@@ -1,17 +1,21 @@
 {
-  "domain": "eyeonsaur",
-  "name": "EyeOnSaur",
-  "version": "1.1.5",
-  "integration_type": "device",
-  "documentation": "https://github.com/cekage/eyeonsaur-ha/blob/main/README.md",
-  "issue_tracker": "https://github.com/cekage/eyeonsaur-ha/issues",
-  "codeowners": ["@cekage"],
-  "config_flow": true,
-  "single_config_entry": true,
-  "requirements": ["saur_client@git+https://github.com/cekage/Saur_fr_client.git@0.2.7"], 
-  "loggers": ["eyeonsaur"],
-  "quality_scale": "custom",
-  "iot_class": "cloud_polling"
+	"codeowners": [
+		"@cekage"
+	],
+	"config_flow": true,
+	"documentation": "https://github.com/cekage/eyeonsaur-ha/blob/main/README.md",
+	"domain": "eyeonsaur",
+	"integration_type": "device",
+	"iot_class": "cloud_polling",
+	"issue_tracker": "https://github.com/cekage/eyeonsaur-ha/issues",
+	"loggers": [
+		"eyeonsaur"
+	],
+	"name": "EyeOnSaur",
+	"quality_scale": "custom",
+	"requirements": [
+		"saur_client@git+https://github.com/cekage/Saur_fr_client.git@0.2.7"
+	],
+	"single_config_entry": true,
+	"version": "1.1.5"
 }
-
-
