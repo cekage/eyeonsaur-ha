@@ -1,17 +1,17 @@
 {
+	"domain": "eyeonsaur",
+	"name": "EyeOnSaur",
 	"codeowners": [
 		"@cekage"
 	],
 	"config_flow": true,
 	"documentation": "https://github.com/cekage/eyeonsaur-ha/blob/main/README.md",
-	"domain": "eyeonsaur",
 	"integration_type": "device",
 	"iot_class": "cloud_polling",
 	"issue_tracker": "https://github.com/cekage/eyeonsaur-ha/issues",
 	"loggers": [
 		"eyeonsaur"
 	],
-	"name": "EyeOnSaur",
 	"quality_scale": "custom",
 	"requirements": [
 		"saur_client@git+https://github.com/cekage/Saur_fr_client.git@0.2.7"
