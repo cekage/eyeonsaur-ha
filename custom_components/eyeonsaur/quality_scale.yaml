@@ -7,7 +7,7 @@ rules:
   appropriate-polling: done
   brands: done
   common-modules: done
-  config-flow-test-coverage: todo
+  config-flow-test-coverage: done
   config-flow: done
   dependency-transparency: done
   docs-actions:
@@ -15,10 +15,12 @@ rules:
     comment: |
       This integration does not provide additional actions.
   docs-high-level-description: done
-  docs-installation-instructions: todo
-    comment: Installation instructions mention HACS, but the integration is not yet available on HACS. Need to add the integration to HACS.
-  docs-removal-instructions: todo
-    comment: Need to implement config entry unloading (Silver) and update documentation to include the deletion of the sqlite file.
+  docs-installation-instructions: done
+    comment: |
+      Installation instructions mention HACS, but the integration is not yet available on HACS. Need to add the integration to HACS.
+  docs-removal-instructions: done
+    comment: |
+      Need to implement config entry unloading (Silver) and update documentation to include the deletion of the sqlite file.
   entity-event-setup:
     status: exempt
     comment: |

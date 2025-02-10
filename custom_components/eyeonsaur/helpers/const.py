@@ -3,7 +3,7 @@
 # pylint: disable=E0401
 
 from datetime import timedelta
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 from homeassistant.const import (
     ATTR_MANUFACTURER,
@@ -19,13 +19,15 @@ from homeassistant.const import (
 DOMAIN: Final = "eyeonsaur"
 PLATFORMS: Final = ["sensor"]
 
-DEV: Final = 0
+if TYPE_CHECKING:
+    DEV: Final[bool] = False  # During type checking, DEV is False
+else:
+    DEV: Final[bool] = False  # At runtime !
 
-DEFAULT_POLLING_INTERVAL = timedelta(days=1)
-DEV_POLLING_INTERVAL = timedelta(seconds=30)
-POLLING_INTERVAL = (
-    DEFAULT_POLLING_INTERVAL if DEV == 0 else DEV_POLLING_INTERVAL
-)
+DEFAULT_POLLING_INTERVAL = timedelta(hours=12)
+DEV_POLLING_INTERVAL = timedelta(minutes=5)
+
+POLLING_INTERVAL = DEV_POLLING_INTERVAL if DEV else DEFAULT_POLLING_INTERVAL
 
 ENTRY_LOGIN: Final = CONF_EMAIL
 ENTRY_PASS: Final = CONF_PASSWORD

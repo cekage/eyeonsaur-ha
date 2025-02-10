@@ -7,6 +7,8 @@ import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.util.dt import as_local
 
+from custom_components.eyeonsaur.recorder import SaurRecorder
+
 pytestmark = pytest.mark.asyncio
 
 
@@ -28,11 +30,6 @@ def mock_recorder_module():
         ),
     ):
         yield
-
-
-from custom_components.eyeonsaur.recorder import (
-    SaurRecorder,  # pylint: disable=wrong-import-position
-)
 
 
 async def test_async_inject_historical_data(hass: HomeAssistant) -> None:

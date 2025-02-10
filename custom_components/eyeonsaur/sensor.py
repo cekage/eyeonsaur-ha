@@ -13,19 +13,13 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfVolume
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import SaurCoordinator
 from .device import SaurDevice
-from .helpers.const import (
-    DOMAIN,
-    ENTRY_CREATED_AT,
-    ENTRY_MANUFACTURER,
-    ENTRY_MODEL,
-    ENTRY_SERIAL_NUMBER,
-)
+from .helpers.const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
@@ -42,11 +36,11 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
 
     device = SaurDevice(
-        unique_id=coordinator.client.default_section_id,
-        manufacturer=entry.data.get(ENTRY_MANUFACTURER),
-        model=entry.data.get(ENTRY_MODEL),
-        serial_number=entry.data.get(ENTRY_SERIAL_NUMBER),
-        created_at=entry.data.get(ENTRY_CREATED_AT),
+        unique_id=coordinator.base_data.section_id,
+        manufacturer=coordinator.base_data.manufacturer,
+        model=coordinator.base_data.model,
+        serial_number=coordinator.base_data.serial_number,
+        created_at=coordinator.base_data.created_at,
     )
     sensor = SaurSensor(coordinator, device)
     async_add_entities([sensor], update_before_add=True)
@@ -63,7 +57,7 @@ class SaurSensor(CoordinatorEntity[SaurCoordinator], SensorEntity):
     _attr_state_class = (
         SensorStateClass.TOTAL_INCREASING
     )  # Utilisation de l'énumération
-    _attr_suggested_display_precision = 0
+    _attr_suggested_display_precision = 2
 
     def __init__(
         self,
@@ -95,13 +89,14 @@ class SaurSensor(CoordinatorEntity[SaurCoordinator], SensorEntity):
         """Return extra state of the sensor."""
         return {
             "state_class": "total_increasing",
-            "physical_meter_date": self.coordinator.data.get(
+            "Date Dernier Relevé Physique": self.coordinator.data.get(
                 "releve_physique",
                 {},
             ).get("date"),
-            "releve_physique_volume": self.coordinator.data.get(
+            "Volume Dernier Relevé Physique": self.coordinator.data.get(
                 "releve_physique",
                 {},
             ).get("valeur"),
-            "installation_date": self.coordinator.data.get("created_at"),
+            "Date d'installation": self.coordinator.data.get("created_at"),
+            "Note Importante": "SAUR ne fournit pas de données en temps réel",
         }

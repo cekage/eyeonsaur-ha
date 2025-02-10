@@ -1,6 +1,6 @@
 [project]
 name = "eyeonsaur"
-version = "1.1.4"
+version = "1.1.5"
 description = "Intégration Saur.fr pour Home Assistant"
 
 # dependencies = [
@@ -30,6 +30,7 @@ lint.ignore = [
     "PLW0603",
     "D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202", "D203", "D205", "D212", "D213", "D400", "D401", "D415", "D416", "D417",
     "S101", "S105", "S106", "S107", "S311",
+    "PLR2004",
     "TC001", "TC002", "TC003", "TC004",
 ]
 
@@ -52,6 +53,7 @@ omit = [
 profile = "black"
 line_length = 80
 
+
 [tool.ruff.lint.isort]
 known-first-party = ["eyeonsaur"]
 
@@ -65,3 +67,22 @@ line-length = 80
 [tool.ruff.lint.per-file-ignores]
 "tests/mock/*.py" = ["ASYNC230"]
 "tests/*.py" = ["B904"]
+
+[tool.mypy]
+python_version = "3.12"
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+# mode hardcore:
+strict = true
+disallow_subclassing_any = true

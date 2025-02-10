@@ -8,22 +8,27 @@
 
 **EyeOnSaur** est une intégration personnalisée pour Home Assistant qui vous permet de suivre votre consommation d'eau remontée par les compteurs connectés SAUR. Elle récupère les données de consommation depuis votre compte Saur (via une API non officielle) et les affiche dans des capteurs Home Assistant, vous offrant ainsi un suivi détaillé de votre consommation quotidienne, hebdomadaire et mensuelle, ainsi qu'un historique.
 
+**Important : L'intégration EyeOnSaur n'offre pas de données de consommation en temps réel.** Les données sont mises à jour quotidiennement, généralement avec les informations de la veille. **Le capteur principal de cette intégration est conçu pour être utilisé avec le tableau de bord "Énergie" de Home Assistant pour un suivi de la consommation sur le long terme.**  Les informations les plus récentes disponibles (relevé physique, date d'installation) sont accessibles dans les attributs du capteur.
+
 ## À propos de Saur
 
 Saur est une entreprise française spécialisée dans la gestion déléguée des services de l'eau et de l'assainissement pour les collectivités locales et les industriels.
 
 ## Fonctionnalités
 
-*   **Récupération automatique des données de consommation :** Récupère les données de consommation d'eau (journalière, hebdomadaire, mensuelle) depuis votre compte Saur.
-*   **Capteurs Home Assistant :** Crée des capteurs pour le suivi de la consommation :
-    *   Consommation journalière
-    *   Consommation hebdomadaire
-    *   Consommation mensuelle
-    *   Historique de consommation
-*   **Informations supplémentaires :**
+*   **Récupération automatique des données de consommation :** Récupère les données de consommation d'eau (journalière, hebdomadaire, mensuelle) depuis votre compte Saur. **Notez que ces données ne sont pas en temps réel et sont généralement mises à jour quotidiennement avec les informations de la veille.**
+*   **Capteurs Home Assistant :** Crée un capteur pour le suivi de la consommation :
+    *   **Capteur principal pour la carte Énergie :** Conçu spécifiquement pour fonctionner avec le tableau de bord Énergie de Home Assistant.
+    *   Consommation journalière (données de la veille, disponibles dans les attributs)
+    *   Consommation hebdomadaire (données mises à jour quotidiennement, disponibles dans les attributs)
+    *   Consommation mensuelle (données mises à jour quotidiennement, disponibles dans les attributs)
+    *   Historique de consommation (suivi sur le long terme)
+*   **Informations supplémentaires (disponibles dans les attributs du capteur) :**
     *   Relevé physique du compteur (si disponible sur votre compte en ligne)
     *   Date d'installation du compteur
 *   **Configuration facile :** Installation simple manuellement, et configuration via l'interface utilisateur de Home Assistant.
+
+**Pour le détail des changements entre les versions, veuillez consulter le fichier [CHANGELOG.md](CHANGELOG.md).**
 
 ## Prérequis
 
@@ -35,7 +40,16 @@ Saur est une entreprise française spécialisée dans la gestion déléguée des
 
 ### Via HACS (Home Assistant Community Store)
 
-L'installation via HACS n'est pas encore possible, mais est prévue prochainement. L'intégration `EyeOnSaur` est en cours d'amélioration pour satisfaire les critères de qualité de HACS. Vous pourrez bientôt l'installer facilement via HACS.
+L'intégration `EyeOnSaur` est disponible via HACS, mais n'est pas encore présente dans le catalogue par défaut. Pour l'installer via HACS, vous devez **ajouter manuellement ce dépôt comme dépôt personnalisé** dans HACS.
+
+1. Dans HACS, allez dans "Intégrations".
+2. Cliquez sur les trois points verticaux en haut à droite et choisissez "Dépôts personnalisés".
+3. Cliquez sur "+ Ajouter un dépôt personnalisé".
+4. Dans la fenêtre qui s'ouvre, renseignez l'URL de ce dépôt GitHub : `https://github.com/cekage/eyeonsaur-ha` et choisissez la catégorie "Intégration".
+5. Cliquez sur "Ajouter".
+6. Une fois le dépôt ajouté, vous pourrez installer l'intégration "EyeOnSaur" depuis HACS.
+
+L'intégration `EyeOnSaur` est en cours d'amélioration pour satisfaire les critères de qualité de HACS et être disponible directement dans le catalogue prochainement.
 
 ### Manuellement
 
@@ -52,7 +66,7 @@ L'installation via HACS n'est pas encore possible, mais est prévue prochainemen
 
 ## Utilisation
 
-Une fois l'intégration EyeOnSaur installée et configurée, elle créera automatiquement des capteurs dans Home Assistant pour suivre votre consommation d'eau. Voici comment visualiser vos données :
+Une fois l'intégration EyeOnSaur installée et configurée, elle créera automatiquement un capteur dans Home Assistant pour suivre votre consommation d'eau. **Ce capteur est principalement destiné à être utilisé dans le tableau de bord "Énergie" de Home Assistant.** Voici comment visualiser vos données :
 
 1. **Ajout de l'intégration :**
     *   Dans Home Assistant, allez dans Paramètres -> Appareils et services -> Intégrations.
@@ -62,7 +76,7 @@ Une fois l'intégration EyeOnSaur installée et configurée, elle créera automa
     *   Cochez la case "Je comprends et j'accepte que cette intégration ne soit pas officielle" pour confirmer que vous avez compris les implications de l'utilisation d'une intégration non officielle.
     *   Cliquez sur "Soumettre".
 
-2. **Ajout des capteurs à la carte Énergie :**
+2. **Ajout du capteur à la carte Énergie :**
     *   Allez dans Paramètres -> Tableaux de bord -> Énergie.
     *   Cliquez sur "Ajouter une consommation".
     *   Dans la liste déroulante "Consommation d'eau", sélectionnez le capteur "Compteur d'eau" créé par l'intégration EyeOnSaur (par exemple, `sensor.compteur_d_eau`).
@@ -77,10 +91,12 @@ Une fois l'intégration EyeOnSaur installée et configurée, elle créera automa
 
     ![Historique de consommation d'eau](https://github.com/cekage/eyeonsaur-ha/blob/main/images/hsitorique_fictive.png?raw=true)
 
-**Remarques :**
+**Remarques Importantes :**
 
-*   Les données de consommation sont récupérées quotidiennement.
-*   L'historique de consommation affiché dépend de la disponibilité des données sur votre compte Saur.
+*   **Données non temps réel :** Les données de consommation ne sont pas fournies en temps réel par SAUR et sont mises à jour quotidiennement par l'intégration, généralement avec les données de la veille.
+*   **Capteur pour la carte Énergie :** Le capteur principal est conçu pour fonctionner de manière optimale avec la carte Énergie de Home Assistant pour un suivi de la consommation sur le long terme.
+*   **Attributs du capteur :**  Les attributs du capteur fournissent des informations complémentaires telles que le dernier relevé physique et la date d'installation.
+*   **Injection de données historiques :** L'intégration inclut une fonctionnalité d'injection de données historiques dans le recorder de Home Assistant pour assurer un suivi de la consommation le plus complet possible. **Cependant, Home Assistant n'est pas nativement conçu pour l'injection de données à posteriori, et cette fonctionnalité peut présenter des limitations.**
 
 ## Dépendance
 
@@ -92,7 +108,8 @@ Cette intégration utilise la librairie Python non officielle [saur_client](http
 2. Trouvez l'intégration "EyeOnSaur" et cliquez sur les trois points verticaux.
 3. Sélectionnez "Supprimer".
 4. Redémarrez Home Assistant.
-5. (Facultatif) Si vous avez installé l'intégration manuellement, supprimez le dossier `eyeonsaur` de votre dossier `custom_components`.
+5. Supprimez le dossier `eyeonsaur` du dossier `custom_components` de votre configuration Home Assistant.
+6. **Supprimez le fichier `consommation_saur.db`** qui se trouve dans votre dossier de configuration Home Assistant.
 
 ## Dépannage
 

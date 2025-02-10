@@ -52,15 +52,16 @@ async def test_async_handle_missing_dates(
         patch(
             "custom_components.eyeonsaur.coordinator.asyncio.sleep",
             new_callable=AsyncMock,
-        ) as mock_sleep,
+        ) as _,
     ):
         # Appeler la fonction à tester (indirectement via _async_update_data)
         await coordinator._async_update_data()
 
         # Injecter manuellement les appels à _async_fetch_periodic_data
-        await coordinator._async_fetch_periodic_data(2024, 1, 10)
+        await coordinator._async_fetch_monthly_data(2024, 1, 10)
 
-        # Vérifier que les fonctions de gestion des dates manquantes ont été appelées
+        # Vérifier que les fonctions de gestion des dates
+        # manquantes ont été appelées
         assert (
             coordinator.db_helper.async_get_all_consumptions_with_absolute.call_count
             == 1

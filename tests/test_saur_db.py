@@ -38,7 +38,8 @@ async def test_async_init_db(db_helper: SaurDatabaseHelper):
     """Test async_init_db."""
     # Appeler explicitement async_init_db dans le test
     await db_helper.async_init_db()
-    # Vérifie que la base de données est initialisée en exécutant une requête simple
+    # Vérifie que la base de données est initialisée
+    # en exécutant une requête simple
     await db_helper._async_execute_query("SELECT 1")
 
 

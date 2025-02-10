@@ -3,9 +3,19 @@
 
 import logging
 import sqlite3
+from collections.abc import Sequence
 from datetime import datetime
+from typing import Any
 
 from homeassistant.core import HomeAssistant
+
+from ..models import (
+    ConsumptionDatas,
+    RelevePhysique,
+    SaurSqliteResponse,
+    TheoreticalConsumptionData,
+    TheoreticalConsumptionDatas,
+)
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
@@ -34,8 +44,8 @@ class SaurDatabaseHelper:
     async def _async_execute_query(
         self,
         query: str,
-        params: tuple = (),
-    ) -> list[sqlite3.Row] | None:
+        params: Sequence[Any] = (),
+    ) -> SaurSqliteResponse:
         """Exécute une requête SQL de manière asynchrone.
 
         Args:
@@ -51,7 +61,7 @@ class SaurDatabaseHelper:
 
         """
 
-        def execute() -> list[sqlite3.Row] | None:
+        def execute() -> SaurSqliteResponse:
             """Exécute la requête SQL dans un thread."""
             try:
                 with sqlite3.connect(self.db_path) as conn:
@@ -96,7 +106,9 @@ class SaurDatabaseHelper:
             """,
         )
 
-    async def async_write_consumptions(self, consumptions: list[dict]) -> None:
+    async def async_write_consumptions(
+        self, consumptions: ConsumptionDatas
+    ) -> None:
         """Écrit ou met à jour les consommations dans la base de données.
 
         Args:
@@ -105,7 +117,7 @@ class SaurDatabaseHelper:
 
         """
         _LOGGER.info(
-            "Début de la mise à jour des consommations dans la base de données...",
+            "Début de la mise à jour des consommations dans la bdd",
         )
         query = """
             INSERT INTO consumptions (date, relative_value, is_ancre)
@@ -116,11 +128,11 @@ class SaurDatabaseHelper:
 
         count = 0
         for conso in consumptions:
-            if conso.get("rangeType") == "Day":
-                date_str = datetime.fromisoformat(conso["startDate"]).strftime(
+            if conso.rangeType == "Day":
+                date_str = datetime.fromisoformat(conso.startDate).strftime(
                     "%Y-%m-%d %H:%M:%S",
                 )
-                value = conso.get("value", 0.0)
+                value = conso.value
                 _LOGGER.debug(
                     "Préparation de l'insertion/mise à jour de la consommation"
                     " pour date=%s, value=%s",
@@ -134,7 +146,7 @@ class SaurDatabaseHelper:
             count,
         )
 
-    async def async_update_anchor(self, anchor_data: dict) -> None:
+    async def async_update_anchor(self, releve: RelevePhysique) -> None:
         """Met à jour la valeur d'ancrage dans la base de données.
 
         Args:
@@ -142,8 +154,8 @@ class SaurDatabaseHelper:
                          la valeur de l'index.
 
         """
-        reading_date = datetime.fromisoformat(anchor_data["readingDate"])
-        index_value = anchor_data["indexValue"]
+        reading_date = datetime.fromisoformat(releve.date)
+        index_value = releve.valeur
         query = """
             INSERT INTO anchor_value (date, value)
             VALUES (?, ?)
@@ -201,13 +213,11 @@ class SaurDatabaseHelper:
 
     async def async_get_all_consumptions_with_absolute(
         self,
-    ) -> list[tuple[str, float]]:
+    ) -> TheoreticalConsumptionDatas:
         """Récupère toutes les consommations avec leur valeur absolue.
 
         Returns:
-            Une liste de tuples, où chaque tuple contient la date
-            (au format 'YYYY-MM-DD HH:MM:SS') et la valeur absolue
-            de la consommation.
+            Une liste de TheoreticalConsumptionData
 
         """
         _LOGGER.debug("async_get_all_consumptions_with_absolute")
@@ -223,13 +233,13 @@ class SaurDatabaseHelper:
                 c.date,
                 CASE
                     WHEN c.date = anchor.anchor_date
-                    THEN anchor.anchor_value  -- On utilise uniquement la valeur absolue de l'ancre
+                    THEN anchor.anchor_value
                     WHEN c.date > anchor.anchor_date
                     THEN
                         anchor.anchor_value + COALESCE((
                             SELECT SUM(relative_value)
                             FROM consumptions
-                            WHERE date >= anchor.anchor_date  -- On inclut la date de l'ancre dans la somme
+                            WHERE date >= anchor.anchor_date
                             AND date <= c.date
                         ), 0)
                     WHEN c.date < anchor.anchor_date
@@ -252,13 +262,18 @@ class SaurDatabaseHelper:
             nb_results,
         )
 
-        formatted_results = []
+        formatted_results: TheoreticalConsumptionDatas = (
+            TheoreticalConsumptionDatas([])
+        )
         if results:
             for row in results:
                 date_str = datetime.fromisoformat(row["date"]).strftime(
-                    "%Y-%m-%d %H:%M:%S",
+                    "%Y-%m-%d %H:%M:%S"
                 )
                 absolute_value = row["absolute_value"]
-                formatted_results.append((date_str, absolute_value))
+                data_point = TheoreticalConsumptionData(
+                    date=date_str, indexValue=absolute_value
+                )
+                formatted_results.append(data_point)
 
         return formatted_results

@@ -2,8 +2,7 @@
 
 import logging
 
-from homeassistant.helpers.device_registry import DeviceEntryType
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 
 from .helpers.const import (
     DOMAIN,
