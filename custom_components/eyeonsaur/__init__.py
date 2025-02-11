@@ -11,7 +11,7 @@ from .helpers.saur_db import SaurDatabaseHelper
 from .recorder import SaurRecorder
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.CRITICAL)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

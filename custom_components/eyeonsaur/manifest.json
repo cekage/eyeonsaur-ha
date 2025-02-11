@@ -12,10 +12,10 @@
 	"loggers": [
 		"eyeonsaur"
 	],
-	"quality_scale": "custom",
+	"quality_scale": "bronze",
 	"requirements": [
 		"saur_client@git+https://github.com/cekage/Saur_fr_client.git@0.2.7"
 	],
 	"single_config_entry": true,
-	"version": "1.1.5"
+	"version": "1.1.6"
 }

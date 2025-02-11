@@ -18,7 +18,6 @@ from ..models import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
 
 
 DB_FILE = "consommation_saur.db"

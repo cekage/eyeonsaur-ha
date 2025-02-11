@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 from ..models import MissingDate, MissingDates, TheoreticalConsumptionDatas
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
 
 
 def find_missing_dates(

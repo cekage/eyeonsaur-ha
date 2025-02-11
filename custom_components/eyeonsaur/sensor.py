@@ -22,7 +22,6 @@ from .device import SaurDevice
 from .helpers.const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
 
 
 async def async_setup_entry(

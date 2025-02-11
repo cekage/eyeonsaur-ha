@@ -3,6 +3,16 @@
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
 [![License][license-shield]](LICENSE)
+[![Quality Scale][quality-scale-shield]][quality-scale]
+
+[quality-scale-shield]: https://img.shields.io/badge/Quality%20Scale-Bronze-orange
+[quality-scale]: https://www.home-assistant.io/integrations/quality_scale/
+
+[commits-shield]: https://img.shields.io/github/commit-activity/w/cekage/eyeonsaur-ha.svg
+[commits]: https://github.com/cekage/eyeonsaur-ha/commits/master
+[license-shield]: https://img.shields.io/github/license/cekage/eyeonsaur-ha.svg
+[releases-shield]: https://img.shields.io/github/release/cekage/eyeonsaur-ha.svg
+[releases]: https://github.com/cekage/eyeonsaur-ha/releases
 
 **⚠️ Cette intégration n'est pas une application officielle de Saur. Elle a été développée par un contributeur indépendant et n'est pas affiliée à Saur ni approuvée par eux. L'utilisation de cette intégration peut être soumise aux conditions d'utilisation de Saur. ⚠️**
 
@@ -40,14 +50,9 @@ Saur est une entreprise française spécialisée dans la gestion déléguée des
 
 ### Via HACS (Home Assistant Community Store)
 
-L'intégration `EyeOnSaur` est disponible via HACS, mais n'est pas encore présente dans le catalogue par défaut. Pour l'installer via HACS, vous devez **ajouter manuellement ce dépôt comme dépôt personnalisé** dans HACS.
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=cekage&repository=eyeonsaur-ha&category=integration)
 
-1. Dans HACS, allez dans "Intégrations".
-2. Cliquez sur les trois points verticaux en haut à droite et choisissez "Dépôts personnalisés".
-3. Cliquez sur "+ Ajouter un dépôt personnalisé".
-4. Dans la fenêtre qui s'ouvre, renseignez l'URL de ce dépôt GitHub : `https://github.com/cekage/eyeonsaur-ha` et choisissez la catégorie "Intégration".
-5. Cliquez sur "Ajouter".
-6. Une fois le dépôt ajouté, vous pourrez installer l'intégration "EyeOnSaur" depuis HACS.
+L'intégration `EyeOnSaur` est disponible via HACS. Cliquez sur le badge ci-dessus pour ajouter ce dépôt personnalisé à HACS, puis installez l'intégration "EyeOnSaur" depuis HACS.
 
 L'intégration `EyeOnSaur` est en cours d'amélioration pour satisfaire les critères de qualité de HACS et être disponible directement dans le catalogue prochainement.
 
@@ -123,10 +128,25 @@ Les contributions sont les bienvenues ! Si vous souhaitez contribuer à l'améli
 
 Ce projet est sous licence [MIT](LICENSE).
 
+## Quality Scale
+
+This integration has achieved the Bronze quality scale. This means that it meets the following criteria:
+
+*   Appropriate polling
+*   Brands
+*   Common modules
+*   Config flow
+*   Config flow test coverage
+*   Dependency transparency
+*   High-level description
+*   Installation instructions
+*   Removal instructions
+*   Entity unique ID
+*   Has entity name
+*   Runtime data
+*   Test before configure
+*   Test before setup
+*   Unique config entry
+
 ---
 <!-- Badges -->
-[commits-shield]: https://img.shields.io/github/commit-activity/w/cekage/eyeonsaur-ha.svg
-[commits]: https://github.com/cekage/eyeonsaur-ha/commits/master
-[license-shield]: https://img.shields.io/github/license/cekage/eyeonsaur-ha.svg
-[releases-shield]: https://img.shields.io/github/release/cekage/eyeonsaur-ha.svg
-[releases]: https://github.com/cekage/eyeonsaur-ha/releases

@@ -5,6 +5,7 @@ from typing import Any
 
 import aiohttp
 import voluptuous as vol
+from aiohttp.client_exceptions import ClientError
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -32,7 +33,6 @@ from .helpers.const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -69,6 +69,36 @@ async def validate_input(
     return errors, exception
 
 
+async def async_get_deliverypoints_data(
+    client: SaurClient,
+) -> SaurResponseDelivery | None:
+    """Encapsulation de l'appel API, pour le mocking."""
+    _LOGGER.debug("1/x _async_get_deliverypoints_data")
+    try:
+        await client._authenticate()
+        reponse: SaurResponseDelivery = await client.get_deliverypoints_data()
+        _LOGGER.debug("2/x _async_get_deliverypoints_data")
+        return reponse
+    except SaurApiError as err:
+        _LOGGER.error(  # Utilise _LOGGER.error au lieu de .exception
+            "Erreur lors de la récupération des données: %s", err
+        )
+        if "unauthorized" in str(err).lower():
+            raise  # Pour l'authentification, on relance
+        raise  # Pour toute autre erreur, on relance
+    except aiohttp.client_exceptions.ClientConnectorError as err:
+        _LOGGER.error(
+            "Erreur de connexion lors de la récupération des données : %s",
+            err,
+        )
+        raise  # On relance pour laisser un niveau supérieur gérer
+
+
+def create_saur_client(login: str, password: str) -> SaurClient:
+    """Factory pour créer une instance de SaurClient."""
+    return SaurClient(login=login, password=password, dev_mode=DEV)
+
+
 class EyeOnSaurConfigFlow(ConfigFlow, domain=DOMAIN):
     """Config flow pour l'intégration EyeOnSaur."""
 
@@ -81,45 +111,18 @@ class EyeOnSaurConfigFlow(ConfigFlow, domain=DOMAIN):
         self._reauth_entry: ConfigEntry[Any] | None = None
         self._user_input: dict[str, Any] = {}
 
-    async def _async_get_deliverypoints_data(
-        self,
-    ) -> SaurResponseDelivery | None:
-        """Encapsulation de l'appel API, pour le mocking."""
-        _LOGGER.debug("1/x _async_get_deliverypoints_data")
-        try:
-            await self.client._authenticate()
-            reponse: SaurResponseDelivery = (
-                await self.client.get_deliverypoints_data()
-            )
-            _LOGGER.debug("2/x _async_get_deliverypoints_data")
-            return reponse
-        except SaurApiError as err:
-            _LOGGER.error(  # Utilise _LOGGER.error au lieu de .exception
-                "Erreur lors de la récupération des données: %s", err
-            )
-            if "unauthorized" in str(err).lower():
-                raise  # Pour l'authentification, on relance
-            raise  # Pour toute autre erreur, on relance
-        except aiohttp.client_exceptions.ClientConnectorError as err:
-            _LOGGER.error(
-                "Erreur de connexion lors de la récupération des données : %s",
-                err,
-            )
-            raise  # On relance pour laisser un niveau supérieur gérer
-
     async def _handle_api_call(
         self, user_input: dict[str, Any]
     ) -> tuple[dict[str, Any] | None, dict[str, str]]:
         """Gère l'appel à l'API et la récupération des données."""
         errors = {}
-        self.client = SaurClient(
+        self.client = create_saur_client(
             login=user_input[ENTRY_LOGIN],
             password=user_input[ENTRY_PASS],
-            dev_mode=DEV,
         )
         try:
             # Appel à la méthode encapsulée
-            deliverypoints = await self._async_get_deliverypoints_data()
+            deliverypoints = await async_get_deliverypoints_data(self.client)
 
             # Gère le cas où _async_get_deliverypoints_data retourne None
             if deliverypoints is None:
@@ -155,7 +158,7 @@ class EyeOnSaurConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "unknown"
             return None, errors
 
-        except aiohttp.client_exceptions.ClientConnectorError:
+        except (ClientError, OSError):
             return None, {"base": "cannot_connect"}
 
     # core/homeassistant/components/tplink_omada/config_flow.py
@@ -203,8 +206,9 @@ class EyeOnSaurConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if not self._reauth_entry:
             return self.async_create_entry(
-                title=f"""{integration.name} -
-                    {self._user_input[ENTRY_UNIQUE_ID]}""",
+                title=(
+                    f"{integration.name} - {self._user_input[ENTRY_UNIQUE_ID]}"
+                ),
                 data=self._user_input,
             )
         self.hass.config_entries.async_update_entry(

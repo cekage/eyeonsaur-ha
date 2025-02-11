@@ -19,7 +19,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.util.dt import as_local
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
 
 
 class SaurRecorder:
