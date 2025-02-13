@@ -43,8 +43,9 @@ Saur est une entreprise française spécialisée dans la gestion déléguée des
 ## Prérequis
 
 *   Un compte Home Assistant.
-*   Un compte Saur avec un accès aux données de consommation d'eau (compteur connecté).
-*   Avoir activé l'accès aux données de consommation via le site ou l'application Saur.
+*   Un compteur connecté :
+![Un compteur SAUR connecté](https://github.com/cekage/eyeonsaur-ha/blob/main/images/compteur.png?raw=true)
+*   Les données de consommation d'eau actives dans le compte [SaurClient](https://mon-espace.saurclient.fr/fr/ma-consommation).
 
 ## Installation
 
@@ -84,7 +85,7 @@ Une fois l'intégration EyeOnSaur installée et configurée, elle créera automa
 2. **Ajout du capteur à la carte Énergie :**
     *   Allez dans Paramètres -> Tableaux de bord -> Énergie.
     *   Cliquez sur "Ajouter une consommation".
-    *   Dans la liste déroulante "Consommation d'eau", sélectionnez le capteur "Compteur d'eau" créé par l'intégration EyeOnSaur (par exemple, `sensor.compteur_d_eau`).
+    *   Dans la liste déroulante "Consommation d'eau", sélectionnez le capteur "Compteur d'eau" créé par l'intégration EyeOnSaur (par exemple, `sensor.compteur_d_eau`). Ne tenez pas compte du message d'indisponibilité du sensor.
     *   Configurez les autres options si nécessaire (par exemple, le coût de l'eau si vous souhaitez un suivi monétaire, **cette option sera disponible dans une future version**).
     *   Cliquez sur "Enregistrer".
 
