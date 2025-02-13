@@ -14,8 +14,8 @@
 	],
 	"quality_scale": "bronze",
 	"requirements": [
-		"saur_client@git+https://github.com/cekage/Saur_fr_client.git@0.2.7"
+		"saur_client@git+https://github.com/cekage/Saur_fr_client.git@0.2.8"
 	],
 	"single_config_entry": true,
-	"version": "1.1.6"
+	"version": "1.1.7"
 }
