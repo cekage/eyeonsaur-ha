@@ -95,7 +95,7 @@ Une fois l'intégration EyeOnSaur installée et configurée, elle créera automa
 
     Voici un exemple de ce que vous pourrez voir :
 
-    ![Historique de consommation d'eau](https://github.com/cekage/eyeonsaur-ha/blob/main/images/hsitorique_fictive.png?raw=true)
+    ![Historique de consommation d'eau fictive](https://github.com/cekage/eyeonsaur-ha/blob/main/images/hsitorique_fictive.png?raw=true)
 
 **Remarques Importantes :**
 
