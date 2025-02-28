@@ -13,14 +13,13 @@ from ..models import (
     ConsumptionDatas,
     RelevePhysique,
     SaurSqliteResponse,
+    SectionId,
+    StrDate,
     TheoreticalConsumptionData,
     TheoreticalConsumptionDatas,
 )
 
 _LOGGER = logging.getLogger(__name__)
-
-
-DB_FILE = "consommation_saur.db"
 
 
 class SaurDatabaseError(Exception):
@@ -30,15 +29,17 @@ class SaurDatabaseError(Exception):
 class SaurDatabaseHelper:
     """Classe utilitaire pour interagir avec la base de données Saur."""
 
-    def __init__(self, hass: HomeAssistant) -> None:
+    def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
         """Initialise le SaurDatabaseHelper.
 
         Args:
             hass: L'instance de Home Assistant.
+            entry_id: L'ID de l'entrée de configuration.
 
         """
         self.hass = hass
-        self.db_path = hass.config.path(DB_FILE)
+        self.db_file = f"consommation_saur_{entry_id}.db"
+        self.db_path = hass.config.path(self.db_file)
 
     async def _async_execute_query(
         self,
@@ -73,7 +74,9 @@ class SaurDatabaseHelper:
                     )
                     cursor.execute(query, params)
                     conn.commit()
-                    return cursor.fetchall()
+                    result = cursor.fetchall()
+                    return tuple(result) if result else None
+
             except sqlite3.Error as err:
                 _LOGGER.exception("Erreur SQLite: %s", err)
                 raise SaurDatabaseError(
@@ -84,44 +87,51 @@ class SaurDatabaseHelper:
 
     async def async_init_db(self) -> None:
         """Initialise la base de données si elle n'existe pas."""
-        _LOGGER.info(
+        _LOGGER.debug(
             "Création/Mise à jour de la base de données à %s", self.db_path
         )
         await self._async_execute_query(
             """
             CREATE TABLE IF NOT EXISTS consumptions (
-                date TEXT PRIMARY KEY,
+                date TEXT NOT NULL,
+                section_id TEXT NOT NULL,
                 relative_value REAL NOT NULL,
-                is_ancre INTEGER NOT NULL DEFAULT 0
+                is_ancre INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (date, section_id)
             );
             """,
         )
         await self._async_execute_query(
             """
             CREATE TABLE IF NOT EXISTS anchor_value (
-                date TEXT PRIMARY KEY,
-                value REAL NOT NULL
+                date TEXT NOT NULL,
+                section_id TEXT NOT NULL,
+                value REAL NOT NULL,
+                PRIMARY KEY (date, section_id)
             );
             """,
         )
 
     async def async_write_consumptions(
-        self, consumptions: ConsumptionDatas
+        self, consumptions: ConsumptionDatas, section_id: SectionId
     ) -> None:
         """Écrit ou met à jour les consommations dans la base de données.
 
         Args:
             consumptions: Une liste de dictionnaires contenant les données
                           de consommation.
+            section_id: L'identifiant unique du compteur.
 
         """
-        _LOGGER.info(
-            "Début de la mise à jour des consommations dans la bdd",
+        _LOGGER.debug(
+            "Début de la mise à jour des consommations dans la bdd pour %s",
+            section_id,
         )
         query = """
-            INSERT INTO consumptions (date, relative_value, is_ancre)
-            VALUES (?, ?, 0)
-            ON CONFLICT(date) DO UPDATE SET
+            INSERT INTO consumptions (date, section_id,
+                relative_value, is_ancre)
+            VALUES (?, ?, ?, 0)
+            ON CONFLICT(date, section_id) DO UPDATE SET
             relative_value = excluded.relative_value
         """
 
@@ -134,46 +144,59 @@ class SaurDatabaseHelper:
                 value = conso.value
                 _LOGGER.debug(
                     "Préparation de l'insertion/mise à jour de la consommation"
-                    " pour date=%s, value=%s",
+                    " pour date=%s, value=%s, section_id=%s",
                     date_str,
                     value,
+                    section_id,
                 )
-                await self._async_execute_query(query, (date_str, value))
+                await self._async_execute_query(
+                    query, (date_str, section_id, value)
+                )
                 count += 1
-        _LOGGER.info(
-            "Mise à jour de %s consommations dans la base de données.",
+        _LOGGER.debug(
+            "Mise à jour de %s consommations dans la base de données pour %s.",
             count,
+            section_id,
         )
 
-    async def async_update_anchor(self, releve: RelevePhysique) -> None:
+    async def async_update_anchor(
+        self, releve: RelevePhysique, section_id: SectionId
+    ) -> None:
         """Met à jour la valeur d'ancrage dans la base de données.
 
         Args:
-            anchor_data: Un dictionnaire contenant la date de lecture et
-                         la valeur de l'index.
+            releve: Les données du relevé physique.
+            section_id: L'identifiant unique du compteur.
 
         """
         reading_date = datetime.fromisoformat(releve.date)
         index_value = releve.valeur
         query = """
-            INSERT INTO anchor_value (date, value)
-            VALUES (?, ?)
-            ON CONFLICT(date) DO UPDATE SET value = excluded.value
+            INSERT INTO anchor_value (date, section_id, value)
+            VALUES (?, ?, ?)
+            ON CONFLICT(date, section_id) DO UPDATE SET value = excluded.value
            """
         await self._async_execute_query(
             query,
-            (reading_date.strftime("%Y-%m-%d %H:%M:%S"), index_value),
+            (
+                reading_date.strftime("%Y-%m-%d %H:%M:%S"),
+                section_id,
+                index_value,
+            ),
         )
 
-        _LOGGER.info("Ancre mise à jour dans la base de données.")
+        _LOGGER.info(
+            "Ancre mise à jour dans la base de données pour %s.", section_id
+        )
 
     async def async_get_total_consumption(
-        self, target_date: datetime
+        self, target_date: datetime, section_id: SectionId
     ) -> float:
         """Récupère la consommation totale jusqu'à une date donnée.
 
         Args:
             target_date: La date cible pour calculer la consommation totale.
+            section_id: L'identifiant unique du compteur.
 
         Returns:
             La consommation totale.
@@ -185,6 +208,7 @@ class SaurDatabaseHelper:
                 (
                     SELECT value
                     FROM anchor_value
+                    WHERE section_id = ?
                     ORDER BY date DESC
                     LIMIT 1
                 ), 0
@@ -196,35 +220,48 @@ class SaurDatabaseHelper:
                         WHERE date > (
                             SELECT date
                             FROM anchor_value
+                            WHERE section_id = ?
                             ORDER BY date DESC
                             LIMIT 1
                         )
                         AND date <= ?
+                        AND section_id = ?
                         AND is_ancre = 0
                     ),
                 0)
         """
         result = await self._async_execute_query(
             query,
-            (target_date.strftime("%Y-%m-%d %H:%M:%S"),),
+            (
+                section_id,
+                section_id,
+                target_date.strftime("%Y-%m-%d %H:%M:%S"),
+                section_id,
+            ),
         )
         return float(result[0][0]) if result and result[0] else 0.0
 
     async def async_get_all_consumptions_with_absolute(
-        self,
+        self, section_id: SectionId
     ) -> TheoreticalConsumptionDatas:
         """Récupère toutes les consommations avec leur valeur absolue.
+
+        Args:
+            section_id: L'identifiant unique du compteur.
 
         Returns:
             Une liste de TheoreticalConsumptionData
 
         """
-        _LOGGER.debug("async_get_all_consumptions_with_absolute")
+        _LOGGER.debug(
+            "async_get_all_consumptions_with_absolute pour %s", section_id
+        )
 
         query = """
             WITH anchor AS (
                 SELECT date AS anchor_date, value AS anchor_value
                 FROM anchor_value
+                WHERE section_id = ?
                 ORDER BY date DESC
                 LIMIT 1
             )
@@ -240,6 +277,7 @@ class SaurDatabaseHelper:
                             FROM consumptions
                             WHERE date >= anchor.anchor_date
                             AND date <= c.date
+                            AND section_id = ?
                         ), 0)
                     WHEN c.date < anchor.anchor_date
                     THEN
@@ -248,31 +286,43 @@ class SaurDatabaseHelper:
                             FROM consumptions
                             WHERE date > c.date
                             AND date < anchor.anchor_date
+                            AND section_id = ?
                         ), 0)
                 END AS absolute_value
             FROM consumptions c
             CROSS JOIN anchor
+            WHERE c.section_id = ?
             ORDER BY c.date DESC;
         """
-        results = await self._async_execute_query(query)
+        results = await self._async_execute_query(
+            query, (section_id, section_id, section_id, section_id)
+        )
         nb_results = len(results) if results else 0
-        _LOGGER.info(
-            "Récupération de %s consommations avec les valeurs absolues.",
+        _LOGGER.debug(
+            "Récupération de %s consommations avec les valeurs "
+            "absolues pour %s.",
             nb_results,
+            section_id,
         )
 
         formatted_results: TheoreticalConsumptionDatas = (
             TheoreticalConsumptionDatas([])
         )
+
         if results:
             for row in results:
-                date_str = datetime.fromisoformat(row["date"]).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
-                absolute_value = row["absolute_value"]
-                data_point = TheoreticalConsumptionData(
-                    date=date_str, indexValue=absolute_value
-                )
-                formatted_results.append(data_point)
+                try:
+                    date_str: StrDate = StrDate(
+                        datetime.fromisoformat(row["date"]).strftime(
+                            "%Y-%m-%d %H:%M:%S"
+                        )
+                    )
+                    absolute_value = row["absolute_value"]
+                    data_point = TheoreticalConsumptionData(
+                        date=date_str, indexValue=absolute_value
+                    )
+                    formatted_results.append(data_point)
+                except ValueError as e:
+                    print(f"⚠️ Date invalide détectée : {row['date']} -> {e}")
 
         return formatted_results
