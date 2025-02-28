@@ -40,15 +40,15 @@ class SaurRecorder:
         value: float,
     ) -> None:
         """Injecte des données historiques pour un capteur spécifique."""
-        _LOGGER.info(
+        _LOGGER.debug(
             "Injecting historical data for {%s} at {%s} with value {%s}",
             entity_id,
             date,
             value,
         )
 
-        statistic_id = "sensor.compteur_saur_" + entity_id
-
+        # statistic_id = "sensor.compteur_saur_" + entity_id
+        statistic_id = entity_id
         epoch = datetime(1970, 1, 1, 0, 0, 0)
         epoch = as_local(epoch)
         start_of_day = datetime(date.year, date.month, date.day, 1, 0, 0)
@@ -56,7 +56,7 @@ class SaurRecorder:
         end_of_day = datetime(date.year, date.month, date.day, 23, 59, 59)
         end_of_day = as_local(end_of_day)
 
-        metadata = StatisticMetaData(
+        metadata: StatisticMetaData = StatisticMetaData(
             has_mean=False,
             has_sum=True,
             name=f"EyeOnSaur Consumption of {statistic_id}",
@@ -66,9 +66,9 @@ class SaurRecorder:
         )
 
         interval = timedelta(hours=1)
-        stats = []
+        stats: list[StatisticData] = []
         current_time = start_of_day + 0 * interval
-        _LOGGER.info(
+        _LOGGER.debug(
             " 📜 for %s at %s with value %s",
             statistic_id,
             current_time,
@@ -84,7 +84,7 @@ class SaurRecorder:
 
         async_import_statistics(self.hass, metadata, stats)
 
-        _LOGGER.info(
+        _LOGGER.debug(
             "Injected historical data for %s at %s with value %s",
             statistic_id,
             date,
