@@ -3,9 +3,8 @@
 import logging
 from typing import Any
 
-import aiohttp
 import voluptuous as vol
-from aiohttp.client_exceptions import ClientError
+from aiohttp.client_exceptions import ClientConnectorError, ClientError
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -13,31 +12,38 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import callback
-from homeassistant.exceptions import HomeAssistantError
-from homeassistant.loader import async_get_integration
-from saur_client import SaurApiError, SaurClient, SaurResponseDelivery
+from homeassistant.helpers.selector import (
+    TextSelector,  # pyright: ignore[reportUnknownVariableType]
+    TextSelectorConfig,
+    TextSelectorType,
+)
+from saur_client import SaurApiError, SaurClient
 
 from .helpers.const import (
     DEV,
     DOMAIN,
-    ENTRY_ABSOLUTE_CONSUMPTION,
-    ENTRY_CREATED_AT,
+    ENTRY_CLIENTID,
+    ENTRY_COMPTEURID,
     ENTRY_LOGIN,
-    ENTRY_MANUFACTURER,
-    ENTRY_MODEL,
     ENTRY_PASS,
-    ENTRY_SERIAL_NUMBER,
     ENTRY_TOKEN,
     ENTRY_UNDERSTAND,
-    ENTRY_UNIQUE_ID,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(ENTRY_LOGIN): str,
-        vol.Required(ENTRY_PASS): str,
+        vol.Required(ENTRY_LOGIN): TextSelector(
+            TextSelectorConfig(
+                type=TextSelectorType.EMAIL, autocomplete="username"
+            )
+        ),
+        vol.Required(ENTRY_PASS): TextSelector(
+            TextSelectorConfig(
+                type=TextSelectorType.PASSWORD, autocomplete="current-password"
+            )
+        ),
         vol.Required(ENTRY_UNDERSTAND): bool,
     }
 )
@@ -51,11 +57,11 @@ STEP_OPTIONS_DATA_SCHEMA = vol.Schema(
 )
 
 
-async def validate_input(
+async def first_check_input(
     data: dict[str, Any],
 ) -> tuple[dict[str, str], Exception | None]:
     """Validate the user input."""
-    errors = {}
+    errors: dict[str, str] = {}
     exception = None
 
     if "@" not in data[ENTRY_LOGIN]:
@@ -69,16 +75,14 @@ async def validate_input(
     return errors, exception
 
 
-async def async_get_deliverypoints_data(
+async def check_credentials(
     client: SaurClient,
-) -> SaurResponseDelivery | None:
+) -> None:
     """Encapsulation de l'appel API, pour le mocking."""
     _LOGGER.debug("1/x _async_get_deliverypoints_data")
     try:
         await client._authenticate()
-        reponse: SaurResponseDelivery = await client.get_deliverypoints_data()
         _LOGGER.debug("2/x _async_get_deliverypoints_data")
-        return reponse
     except SaurApiError as err:
         _LOGGER.error(  # Utilise _LOGGER.error au lieu de .exception
             "Erreur lors de la récupération des données: %s", err
@@ -86,7 +90,7 @@ async def async_get_deliverypoints_data(
         if "unauthorized" in str(err).lower():
             raise  # Pour l'authentification, on relance
         raise  # Pour toute autre erreur, on relance
-    except aiohttp.client_exceptions.ClientConnectorError as err:
+    except ClientConnectorError as err:
         _LOGGER.error(
             "Erreur de connexion lors de la récupération des données : %s",
             err,
@@ -111,44 +115,23 @@ class EyeOnSaurConfigFlow(ConfigFlow, domain=DOMAIN):
         self._reauth_entry: ConfigEntry[Any] | None = None
         self._user_input: dict[str, Any] = {}
 
-    async def _handle_api_call(
+    async def _check_online_credentials(
         self, user_input: dict[str, Any]
-    ) -> tuple[dict[str, Any] | None, dict[str, str]]:
+    ) -> None:
         """Gère l'appel à l'API et la récupération des données."""
-        errors = {}
+        errors: dict[str, str] = {}
         self.client = create_saur_client(
             login=user_input[ENTRY_LOGIN],
             password=user_input[ENTRY_PASS],
         )
         try:
             # Appel à la méthode encapsulée
-            deliverypoints = await async_get_deliverypoints_data(self.client)
+            _LOGGER.debug(" 1/x _check_online_credentials pending ")
 
-            # Gère le cas où _async_get_deliverypoints_data retourne None
-            if deliverypoints is None:
-                _LOGGER.critical(
-                    "L'API SAUR a retourné des données invalides (None)."
-                )
-                raise HomeAssistantError(
-                    "Impossible de récupérer les données de l'API"
-                )
-            _LOGGER.debug(
-                " 2/x _handle_api_call deliverypoints = %s ", deliverypoints
-            )
-            unique_id = self.client.default_section_id
+            await check_credentials(self.client)
 
-            meter = deliverypoints.get("meter", {})
-            user_data = {
-                ENTRY_UNIQUE_ID: unique_id,
-                ENTRY_TOKEN: self.client.access_token,
-                ENTRY_ABSOLUTE_CONSUMPTION: None,
-                ENTRY_MANUFACTURER: meter.get("meterBrandCode"),
-                ENTRY_MODEL: meter.get("meterModelCode"),
-                ENTRY_SERIAL_NUMBER: meter.get("trueRegistrationNumber"),
-                ENTRY_CREATED_AT: meter.get("installationDate"),
-            }
-            _LOGGER.debug(" 3/x _handle_api_call ")
-            return user_data, {}
+            _LOGGER.debug(" 2/x _check_online_credentials done ")
+            return
 
         except SaurApiError as err:
             # Seule vérification : "unauthorized" (insensible à la casse)
@@ -156,10 +139,10 @@ class EyeOnSaurConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "invalid_auth"
             else:
                 errors["base"] = "unknown"
-            return None, errors
+            return
 
         except (ClientError, OSError):
-            return None, {"base": "cannot_connect"}
+            return
 
     # core/homeassistant/components/tplink_omada/config_flow.py
     async def async_step_user(
@@ -174,7 +157,7 @@ class EyeOnSaurConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors={},
             )
 
-        errors, exception = await validate_input(user_input)
+        errors, exception = await first_check_input(user_input)
         if errors:
             return self.async_show_form(
                 step_id="user",
@@ -185,30 +168,23 @@ class EyeOnSaurConfigFlow(ConfigFlow, domain=DOMAIN):
                 },
             )
 
-        user_data, api_errors = await self._handle_api_call(user_input)
-        if api_errors:
+        await self._check_online_credentials(user_input)
+        if not self.client.clientId:
             return self.async_show_form(
-                step_id="user",
-                data_schema=STEP_USER_DATA_SCHEMA,
-                errors=api_errors,
-                description_placeholders={
-                    "error_detail": (
-                        next(iter(api_errors.values())) if api_errors else ""
-                    )
-                },
+                step_id="user", data_schema=STEP_USER_DATA_SCHEMA
             )
 
         self._user_input.update(user_input)
-        if user_data:
-            self._user_input.update(user_data)
-
-        integration = await async_get_integration(self.hass, DOMAIN)
+        user_data = {
+            ENTRY_TOKEN: self.client.access_token,
+            ENTRY_CLIENTID: self.client.clientId,
+            ENTRY_COMPTEURID: self.client.default_section_id,
+        }
+        self._user_input.update(user_data)
 
         if not self._reauth_entry:
             return self.async_create_entry(
-                title=(
-                    f"{integration.name} - {self._user_input[ENTRY_UNIQUE_ID]}"
-                ),
+                title=(f"EyeOnSaur - {self._user_input[ENTRY_LOGIN]}"),
                 data=self._user_input,
             )
         self.hass.config_entries.async_update_entry(
@@ -223,9 +199,14 @@ class EyeOnSaurConfigFlow(ConfigFlow, domain=DOMAIN):
         self, entry_data: dict[str, Any]
     ) -> ConfigFlowResult:
         """Handle reauthentication."""
-        self._reauth_entry = self.hass.config_entries.async_get_entry(
-            self.context["entry_id"]
-        )
+        # self._reauth_entry = self.hass.config_entries.async_get_entry(
+        #     self.context["entry_id"]
+        # )
+        entry_id = self.context.get("entry_id")
+        if entry_id is not None:
+            self._reauth_entry = self.hass.config_entries.async_get_entry(
+                entry_id
+            )
         return await self.async_step_user(user_input=entry_data)
 
     @staticmethod
