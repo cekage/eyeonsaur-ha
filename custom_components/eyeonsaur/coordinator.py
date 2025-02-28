@@ -4,7 +4,7 @@ import asyncio
 import logging
 import random
 from asyncio import Task
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 from aiohttp import ClientResponseError
 from homeassistant.config_entries import ConfigEntry
@@ -16,6 +16,8 @@ from homeassistant.helpers.entity_registry import async_get
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
 )
+from homeassistant.util.dt import as_local
+from homeassistant.util.dt import now as hass_now
 from saur_client import (
     SaurClient,
     SaurResponseContracts,
@@ -184,9 +186,9 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
                 **device_info,  # MODIFclientId
             )
 
-            date_installation = datetime.fromisoformat(
-                compteur.releve_physique.date
-            ).replace(tzinfo=UTC)
+            date_installation = as_local(
+                datetime.fromisoformat(compteur.releve_physique.date)
+            )
             task = self.hass.async_create_task(
                 self._async_fetch_monthly_data(
                     year=date_installation.year,
@@ -195,7 +197,7 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
                 )
             )
             self._background_tasks.append(task)
-        await asyncio.gather(*self._background_tasks)
+        # await asyncio.gather(*self._background_tasks)
         await super().async_config_entry_first_refresh()
 
     async def _async_update_data(self) -> SaurData:
@@ -225,6 +227,7 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
                 self._async_backgroundupdate_data(compteur)
             )
             self._background_tasks.append(task)
+        await asyncio.gather(*self._background_tasks)
 
         return self._cached_data
 
@@ -233,7 +236,7 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
     ) -> None:
         """Récupère les données hebdomadaires et les stocke dans
         la base de données."""
-        now: datetime = datetime.now(UTC) - timedelta(days=1, hours=10)
+        now: datetime = hass_now() - timedelta(days=2, hours=10)
         try:
             weekly_data: SaurResponseWeekly = (
                 await self.client.get_weekly_data(
