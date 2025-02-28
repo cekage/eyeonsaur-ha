@@ -5,3 +5,5 @@
 .coverage
 coverage.xml
 test_consommation_saur.db
+saur_client-*.whl
+saur_client-*.gz
