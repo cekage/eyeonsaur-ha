@@ -1,10 +1,11 @@
 [project]
 name = "eyeonsaur"
-version = "1.1.8"
+version = "1.1.9"
 description = "Intégration Saur.fr pour Home Assistant"
 
 
 [tool.ruff]
+extend-exclude = ["*.pyi"]
 line-length = 80
 target-version = "py312"
 lint.select = [
@@ -23,6 +24,7 @@ lint.select = [
     "TCH" # typeguard
 ]
 lint.ignore = [
+    "B904",
     "PLC0414",
     "PLW0603",
     "D100", "D101", "D102", "D103", "D104", "D105", "D107", "D202", "D203", "D205", "D212", "D213", "D400", "D401", "D415", "D416", "D417",
@@ -40,7 +42,7 @@ asyncio_default_fixture_loop_scope = "function"
 
 
 [tool.coverage.run]
-source = ["eyeonsaur"]
+source = ["custom_components.eyeonsaur"]
 omit = [
     "**/__pycache__",
     "tests/**"
@@ -83,3 +85,9 @@ warn_unused_ignores = true
 # mode hardcore:
 strict = true
 disallow_subclassing_any = true
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+reportUnusedImport = true
+include = ["eyeonsaur-ha", "tests"]
