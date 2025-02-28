@@ -3,8 +3,13 @@ Modèles de données (dataclasses) pour l'intégration eyeonsaur.
 """
 
 import sqlite3
-from dataclasses import dataclass, field
-from typing import NewType
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, NewType
+
+if TYPE_CHECKING:
+    from .device import Compteurs
+
+StrDate = NewType("StrDate", str)
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,7 +26,7 @@ class ConsumptionData:
             (par exemple, 'Day', 'Week', 'Month').
     """
 
-    startDate: str
+    startDate: StrDate
     value: float
     rangeType: str
 
@@ -32,12 +37,12 @@ class AnchorData:
     Représente les données d'ancrage (index de référence).
 
     Attributes:
-        readingDate (str): Date et heure de la lecture de l'index de référence,
-            au format 'AAAA-MM-JJ HH:MM:SS'.
+        readingDate (StrDate): Date et heure de la lecture
+            de l'index de référence, au format 'AAAA-MM-JJ HH:MM:SS'.
         indexValue (float): Valeur de l'index de référence.
     """
 
-    readingDate: str
+    readingDate: StrDate
     indexValue: float
 
 
@@ -52,7 +57,7 @@ class TheoreticalConsumptionData:
         indexValue (float): Valeur relative de la consommation théorique.
     """
 
-    date: str
+    date: StrDate
     indexValue: float
 
 
@@ -76,47 +81,68 @@ class MissingDate:
 class RelevePhysique:
     """Encapsule les données du relevé physique."""
 
-    #    date: str | None = None
-    date: str
-    valeur: float | None = None
+    date: StrDate
+    """Date du relevé (format AAAA-MM-JJTHH:MM:SS)."""
+    valeur: float
+    """Valeur du relevé."""
 
 
-# @dataclass(frozen=True, slots=True)
-# class RelevePhysique:
-#     """
-#     Encapsule les données du relevé physique.
-#     """
+ContratId = NewType("ContratId", str)
+SectionId = NewType("SectionId", str)
 
-#     data: dict[str, str | float | None] = field(
-#         default_factory=lambda: {"date": None, "valeur": None}
-#     )
+# @dataclass(slots=True, frozen=True)
+# class Compteur:
+#     """Représente les données d'un compteur."""
+#     sectionId: SectionId
+#     """Identifiant unique du compteur."""
+#     clientReference: str
+#     """Référence client."""
+#     contractName: str
+#     """Nom du contrat."""
+#     contractId: ContratId
+#     """Id du contrat."""
+#     isContractTerminated: bool
+#     """Indique si le contrat est terminé."""
+#     date_installation: StrDate
+#     """Date d'installation du compteur (format AAAA-MM-JJTHH:MM:SS)."""
+#     adresse: str
+#     """Adresse du compteur."""
+#     pairingTechnologyCode: str
+#     """Code de la technologie d'appairage."""
+#     releve_physique: RelevePhysique
+#     """Données du relevé physique."""
+#     manufacturer: str
+#     """Fabricant du compteur, peut être None."""
+#     model: str
+#     """Modèle du compteur, peut être None."""
+#     serial_number: str
+#     """Numéro de série du compteur, peut être None."""
 
-
-@dataclass(slots=True, frozen=False)
-class BaseData:
-    """
-    Représente les données de base d'un point de livraison.
-
-    Attributes:
-        releve_physique (dict[str, Optional[str | float]]): Dictionnaire
-            contenant la date et la valeur du relevé physique.
-        created_at (Optional[str]): Date de création du point de livraison,
-            au format 'AAAA-MM-JJ HH:MM:SS'.
-        section_id (Optional[str]): Identifiant de la section.
-        manufacturer (Optional[str]): Fabricant du compteur.
-        model (Optional[str]): Modèle du compteur.
-        serial_number (Optional[str]): Numéro de série du compteur.
-    """
-
-    # releve_physique: "RelevePhysique" = field(default_factory=RelevePhysique)
-    releve_physique: "RelevePhysique" = field(
-        default_factory=lambda: RelevePhysique(date="")
-    )
-    created_at: str | None = None
-    section_id: str | None = None
-    manufacturer: str | None = None
-    model: str | None = None
-    serial_number: str | None = None
+# @dataclass(slots=True, frozen=True)
+# class Compteur:
+#     """Représente les données d'un compteur."""
+#     sectionId: SectionId
+#     """Identifiant unique du compteur."""
+#     clientReference: str
+#     """Référence client."""
+#     contractName: str
+#     """Nom du contrat."""
+#     contractId: ContratId
+#     """Id du contrat."""
+#     isContractTerminated: bool
+#     """Indique si le contrat est terminé."""
+#     date_installation: StrDate
+#     """Date d'installation du compteur (format AAAA-MM-JJTHH:MM:SS)."""
+#     pairingTechnologyCode: str
+#     """Code de la technologie d'appairage."""
+#     releve_physique: RelevePhysique
+#     """Données du relevé physique."""
+#     manufacturer: str
+#     """Fabricant du compteur."""
+#     model: str
+#     """Modèle du compteur."""
+#     serial_number: str
+#     """Numéro de série du compteur."""
 
 
 JsonStr = NewType("JsonStr", str)
@@ -127,7 +153,7 @@ JsonStr = NewType("JsonStr", str)
 Modèles de données (dataclasses) pour l'intégration eyeonsaur.
 """
 
-SaurSqliteResponse = list[sqlite3.Row] | None
+SaurSqliteResponse = tuple[sqlite3.Row, ...] | None
 """Represents the result of a SQLite query.
 
 This can be a list of sqlite3.Row objects (each
@@ -155,3 +181,38 @@ utilisé pour renforcer le typage et améliorer la clarté du code.
 """
 
 MissingDates = NewType("MissingDates", list[MissingDate])
+"""
+Représente une collection typée d'objets MissingDate.
+
+MissingDates est un type distinct basé sur list[MissingDate],
+utilisé pour renforcer le typage et améliorer la clarté du code.
+"""
+
+
+@dataclass(slots=True, frozen=True)
+class Contract:
+    """Représente les informations d'un contrat."""
+
+    contract_id: ContratId
+    contract_name: str
+    isContractTerminated: bool
+
+
+Contracts = NewType("Contracts", list[Contract])
+
+ClientId = NewType("ClientId", str)
+
+
+@dataclass(slots=True, frozen=True)
+class SaurData:
+    """
+    Représente les données de l'intégration SAUR,
+    incluant une liste de compteurs.
+    """
+
+    saurClientId: ClientId
+    """Identifiant du client SAUR."""
+    compteurs: "Compteurs"
+    """Liste immuable contenant les compteurs associés au client."""
+    contracts: Contracts
+    """Dictionnaire des contrats, indexés par contract_id."""
