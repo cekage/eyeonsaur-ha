@@ -11,19 +11,21 @@ from .helpers.saur_db import SaurDatabaseHelper
 from .recorder import SaurRecorder
 
 _LOGGER = logging.getLogger(__name__)
-logging.basicConfig(level=logging.CRITICAL)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the component."""
     hass.data.setdefault(DOMAIN, {})
 
-    db_helper = SaurDatabaseHelper(hass)
+    db_helper = SaurDatabaseHelper(hass, entry.entry_id)
     recorder = SaurRecorder(hass)
     coordinator = SaurCoordinator(hass, entry, db_helper, recorder)
 
     # Store coordinator in a dictionary
-    hass.data[DOMAIN][entry.entry_id] = {"coordinator": coordinator}
+    hass.data[DOMAIN][entry.entry_id] = {
+        "coordinator": coordinator,
+        "unique_id": entry.entry_id,
+    }
 
     await coordinator.async_config_entry_first_refresh()
 
