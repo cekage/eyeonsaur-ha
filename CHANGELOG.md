@@ -8,24 +8,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [v1.1.9] - 2024-02-27
 
 ### Added
-- ✨ Ajout du sensor **Date Installation**
-- ✨ Ajout du sensor **Date Contrat**
-- ✨ Ajout du sensor **Date Relevé physique**
-- ✨ Ajout du sensor **Valeur Relevé physique**
-- ✨ Ajout du sensor **Numéro de série**
-- ⚡ Ajout du sensor **Valeur pour Panneau Énergie**
-- 🔄 Gère tous les **compteurs actifs**
+- ✨ Ajout du capteur **Date Installation**
+- ✨ Ajout du capteur **Date Contrat**
+- ✨ Ajout du capteur **Date Relevé physique**
+- ✨ Ajout du capteur **Valeur Relevé physique**
+- ✨ Ajout du capteur **Numéro de série**
+- ⚡ Ajout du capteur **Valeur pour Panneau Énergie**
+- 🔄 Gestion de tous les **compteurs actifs**
 - 📦 Regroupement des **compteurs actifs par contrats**
+- ✨ Récupération et persistance des données **Saur** de manière efficace
+  - 🚀 Récupération des points de livraison en **parallèle**
+  - 🚀 Récupération des dernières données connues en **parallèle**
+  - 🔑 Mise à jour de l'entrée de configuration avec le **token**
+- ⚡ Amélioration du **flux de configuration** et de la gestion de l'authentification
+  - 🔐 Utilisation de **TextSelector** pour le login/mot de passe
+  - 📝 Simplification de la vérification des **identifiants**
+  - 💾 Enregistrement du **clientId** et du **compteurId**
+- 🔧 Enregistrement du **unique_id** dans `hass.data`
+- 🎛️ Ajout de **données API mockées** pour les tests
+  - 🧪 Ajout de `area.json`, `auth.json`, et `weekly.json`
 
 ### Fixed
-- 🛠️ Rétablissement du **dernier relevé** dans les attributs du sensor
-- 🔧 Correction du **double _authenticate()**
+- 🛠️ Rétablissement du **dernier relevé** dans les attributs du capteur
+- 🛠️ Correction du **mode DEV** et ajout de **CONF_CLIENT_ID**
+  - 🔄 Définir DEV sur True au moment de l'exécution
+  - 🔑 Ajout de la constante **CONF_CLIENT_ID**
+- 🔧 Correction du **blocage des sockets dans les tests**
+  - 🚪 Autorisation de tous les sockets dans les tests
 
 ### Changed
-- 📜 `manifest.json` utilise maintenant **PyPi**
-- 🔨 Refonte totale de la **base de données**
-- ⚙️ Utilisation du **DEBUG** de `configuration.yaml`
-- ✅ Couverture de **test**
+- 📜 Le fichier `manifest.json` utilise maintenant **PyPi**
+- ⬆️ Mise à jour de la dépendance `Saur_fr_clientr` vers la version **0.3.2** de **PyPi**
+- 🔨 Refactorisation de l'**extraction des données des dispositifs**
+  - 📦 Refactorisation de la classe `Compteur`
+  - 📡 Extraction depuis le **point de terminaison AREA**
+  - 🗂️ Ajout de la collection **Compteurs**
+- ⚙️ Mise à jour des dépendances et de la configuration
+  - 📜 Mise à jour de la **configuration pyright**
+  - 🚀 Mise à jour de la **liste d'exclusion ruff**
+  - 📈 Mise à jour des **sources de couverture**
 
 ### Dependency Updates
 - ⬆️ Mise à jour de la dépendance `Saur_fr_clientr` vers la version **0.3.2** de **PyPi**
