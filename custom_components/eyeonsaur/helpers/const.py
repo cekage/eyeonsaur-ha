@@ -23,7 +23,7 @@ PLATFORMS: Final = ["sensor"]
 if TYPE_CHECKING:
     DEV: Final[bool] = False  # During type checking, DEV is False
 else:
-    DEV: Final[bool] = True  # At runtime !
+    DEV: Final[bool] = False  # At runtime !
 
 DEFAULT_POLLING_INTERVAL = timedelta(hours=12)
 DEV_POLLING_INTERVAL = timedelta(minutes=5)

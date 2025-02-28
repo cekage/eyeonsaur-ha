@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),  
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v1.1.9] - 2024-02-27
+## [v1.1.10] - 2024-02-28 (+v1.1.9 + fix)
 
 ### Added
 - ✨ Ajout du capteur **Date Installation**
@@ -17,36 +17,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔄 Gestion de tous les **compteurs actifs**
 - 📦 Regroupement des **compteurs actifs par contrats**
 - ✨ Récupération et persistance des données **Saur** de manière efficace
-  - 🚀 Récupération des points de livraison en **parallèle**
-  - 🚀 Récupération des dernières données connues en **parallèle**
-  - 🔑 Mise à jour de l'entrée de configuration avec le **token**
+- 🚀 Récupération des points de livraison en **parallèle**
+- 🚀 Récupération des dernières données connues en **parallèle**
+- 🔑 Mise à jour de l'entrée de configuration avec le **token**
 - ⚡ Amélioration du **flux de configuration** et de la gestion de l'authentification
-  - 🔐 Utilisation de **TextSelector** pour le login/mot de passe
-  - 📝 Simplification de la vérification des **identifiants**
-  - 💾 Enregistrement du **clientId** et du **compteurId**
+- 🔐 Utilisation de **TextSelector** pour le login/mot de passe
+- 📝 Simplification de la vérification des **identifiants**
+- 💾 Enregistrement du **clientId** et du **compteurId**
 - 🔧 Enregistrement du **unique_id** dans `hass.data`
 - 🎛️ Ajout de **données API mockées** pour les tests
-  - 🧪 Ajout de `area.json`, `auth.json`, et `weekly.json`
+- 🧪 Ajout de `area.json`, `auth.json`, et `weekly.json`
 
 ### Fixed
 - 🛠️ Rétablissement du **dernier relevé** dans les attributs du capteur
 - 🛠️ Correction du **mode DEV** et ajout de **CONF_CLIENT_ID**
-  - 🔄 Définir DEV sur True au moment de l'exécution
-  - 🔑 Ajout de la constante **CONF_CLIENT_ID**
+- 🔄 Définir DEV sur True au moment de l'exécution
+- 🔑 Ajout de la constante **CONF_CLIENT_ID**
 - 🔧 Correction du **blocage des sockets dans les tests**
-  - 🚪 Autorisation de tous les sockets dans les tests
+- 🚪 Autorisation de tous les sockets dans les tests
+- 🔧 Correction du **FLAG DEV**
 
 ### Changed
 - 📜 Le fichier `manifest.json` utilise maintenant **PyPi**
 - ⬆️ Mise à jour de la dépendance `Saur_fr_clientr` vers la version **0.3.2** de **PyPi**
 - 🔨 Refactorisation de l'**extraction des données des dispositifs**
-  - 📦 Refactorisation de la classe `Compteur`
-  - 📡 Extraction depuis le **point de terminaison AREA**
-  - 🗂️ Ajout de la collection **Compteurs**
+- 📦 Refactorisation de la classe `Compteur`
+- 📡 Extraction depuis le **point de terminaison AREA**
+- 🗂️ Ajout de la collection **Compteurs**
 - ⚙️ Mise à jour des dépendances et de la configuration
-  - 📜 Mise à jour de la **configuration pyright**
-  - 🚀 Mise à jour de la **liste d'exclusion ruff**
-  - 📈 Mise à jour des **sources de couverture**
+- 📜 Mise à jour de la **configuration pyright**
+- 🚀 Mise à jour de la **liste d'exclusion ruff**
+- 📈 Mise à jour des **sources de couverture**
 
 ### Dependency Updates
 - ⬆️ Mise à jour de la dépendance `Saur_fr_clientr` vers la version **0.3.2** de **PyPi**
