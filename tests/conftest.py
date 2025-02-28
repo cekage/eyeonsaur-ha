@@ -1,23 +1,22 @@
-"""Fixtures for the EyeOnSaur integration tests."""
+# import pytest
+# import pytest_socket
+# import socket
 
-from unittest.mock import patch
+# def pytest_configure(config):
+#     """Configure pytest to modify disable_socket."""
 
-import pytest
+#     def modified_disable_socket(allow_unix_socket=False):
+#         """Modified disable_socket to always allow sockets."""
+#         class GuardedSocket(socket.socket):
+#             """socket guard to disable socket creation (from pytest-socket)"""
 
+#             def __new__(cls, family=-1, type=-1, proto=-1, fileno=None):
+#                 if _is_unix_socket(family) and allow_unix_socket or True:  # Modified line
+#                     return super().__new__(cls, family, type, proto, fileno)
 
-# Fixture loading the integration
-@pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations):
-    """Enable custom integrations."""
-    return
+#                 raise pytest_socket.SocketBlockedError()
 
+#         socket.socket = GuardedSocket
 
-# Fixture loading the manifest.json
-@pytest.fixture(autouse=True)
-def mock_manifest(hass):
-    """Mock the manifest.json file."""
-    with patch(
-        "pytest_homeassistant_custom_component.common.get_test_config_dir",
-        return_value="custom_components/eyeonsaur",
-    ):
-        yield
+#     # Replace the original disable_socket with the modified version
+#     pytest_socket.disable_socket = modified_disable_socket
