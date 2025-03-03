@@ -261,26 +261,31 @@ class SaurDatabaseHelper:
 
         query = """
             WITH Anchor AS (
-            SELECT date, value FROM anchor_value
-            WHERE section_id = ?
+            SELECT date, value FROM anchor_value WHERE section_id = ?
             ),
-            CumulativeConsumptions AS (
-            SELECT c.date, c.relative_value,
+            ConsumptionsWithCumulative AS (
+            SELECT
+                c.date,
+                c.relative_value,
                 SUM(c.relative_value) OVER (ORDER BY c.date ASC)
                 AS cumulative_relative
             FROM consumptions c WHERE c.section_id = ?
-            )
-            SELECT cc.date, cc.relative_value,
-            CASE
-                WHEN cc.date = (SELECT date FROM Anchor)
+            ),
+            AbsoluteValues AS (
+            SELECT
+                cw.date, cw.relative_value,
+                CASE
+                WHEN cw.date = (SELECT date FROM Anchor)
                 THEN (SELECT value FROM Anchor)
-                ELSE (SELECT value FROM Anchor) - (
-                SELECT cumulative_relative FROM CumulativeConsumptions
-                WHERE date = (SELECT date FROM Anchor))
-                + cc.cumulative_relative
-            END AS absolue
-            FROM CumulativeConsumptions cc
-            ORDER BY cc.date DESC;
+                ELSE (SELECT value FROM Anchor) + cw.cumulative_relative
+                - (SELECT cumulative_relative
+                    FROM ConsumptionsWithCumulative
+                    WHERE date = (SELECT date FROM Anchor))
+                END AS absolute_value
+            FROM ConsumptionsWithCumulative cw
+            )
+            SELECT date, relative_value, absolute_value FROM AbsoluteValues
+            ORDER BY date DESC;
         """
 
         results = await self._async_execute_query(
@@ -307,7 +312,7 @@ class SaurDatabaseHelper:
                             "%Y-%m-%d %H:%M:%S"
                         )
                     )
-                    absolute_value: float = float(row["absolue"])
+                    absolute_value: float = float(row["absolute_value"])
 
                     data_point: TheoreticalConsumptionData = (
                         TheoreticalConsumptionData(
