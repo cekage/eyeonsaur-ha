@@ -244,70 +244,60 @@ class SaurDatabaseHelper:
     async def async_get_all_consumptions_with_absolute(
         self, section_id: SectionId
     ) -> TheoreticalConsumptionDatas:
-        """Récupère toutes les consommations avec leur valeur absolue.
+        """
+        Récupère toutes les consommations avec leur valeur
+        absolue en utilisant une seule requête SQL.
 
         Args:
             section_id: L'identifiant unique du compteur.
 
         Returns:
-            Une liste de TheoreticalConsumptionData
-
+            Une liste de TheoreticalConsumptionData.
         """
+
         _LOGGER.debug(
             "async_get_all_consumptions_with_absolute pour %s", section_id
         )
 
         query = """
-            WITH anchor AS (
-                SELECT date AS anchor_date, value AS anchor_value
-                FROM anchor_value
-                WHERE section_id = ?
-                ORDER BY date DESC
-                LIMIT 1
+            WITH Anchor AS (
+            SELECT date, value FROM anchor_value
+            WHERE section_id = ?
+            ),
+            CumulativeConsumptions AS (
+            SELECT c.date, c.relative_value,
+                SUM(c.relative_value) OVER (ORDER BY c.date ASC)
+                AS cumulative_relative
+            FROM consumptions c WHERE c.section_id = ?
             )
-            SELECT
-                c.date,
-                CASE
-                    WHEN c.date = anchor.anchor_date
-                    THEN anchor.anchor_value
-                    WHEN c.date > anchor.anchor_date
-                    THEN
-                        anchor.anchor_value + COALESCE((
-                            SELECT SUM(relative_value)
-                            FROM consumptions
-                            WHERE date >= anchor.anchor_date
-                            AND date <= c.date
-                            AND section_id = ?
-                        ), 0)
-                    WHEN c.date < anchor.anchor_date
-                    THEN
-                        anchor.anchor_value - COALESCE((
-                            SELECT SUM(relative_value)
-                            FROM consumptions
-                            WHERE date > c.date
-                            AND date < anchor.anchor_date
-                            AND section_id = ?
-                        ), 0)
-                END AS absolute_value
-            FROM consumptions c
-            CROSS JOIN anchor
-            WHERE c.section_id = ?
-            ORDER BY c.date DESC;
+            SELECT cc.date, cc.relative_value,
+            CASE
+                WHEN cc.date = (SELECT date FROM Anchor)
+                THEN (SELECT value FROM Anchor)
+                ELSE (SELECT value FROM Anchor) - (
+                SELECT cumulative_relative FROM CumulativeConsumptions
+                WHERE date = (SELECT date FROM Anchor))
+                + cc.cumulative_relative
+            END AS absolue
+            FROM CumulativeConsumptions cc
+            ORDER BY cc.date DESC;
         """
+
         results = await self._async_execute_query(
-            query, (section_id, section_id, section_id, section_id)
+            query, (section_id, section_id)
         )
+
         nb_results = len(results) if results else 0
         _LOGGER.debug(
-            "Récupération de %s consommations avec les valeurs "
-            "absolues pour %s.",
+            "Récupération de %s consommations avec les "
+            "valeurs absolues pour %s.",
             nb_results,
             section_id,
         )
 
         formatted_results: TheoreticalConsumptionDatas = (
             TheoreticalConsumptionDatas([])
-        )
+        )  # Assuming this is how you create an empty object
 
         if results:
             for row in results:
@@ -317,12 +307,22 @@ class SaurDatabaseHelper:
                             "%Y-%m-%d %H:%M:%S"
                         )
                     )
-                    absolute_value = row["absolute_value"]
-                    data_point = TheoreticalConsumptionData(
-                        date=date_str, indexValue=absolute_value
+                    absolute_value: float = float(row["absolue"])
+
+                    data_point: TheoreticalConsumptionData = (
+                        TheoreticalConsumptionData(
+                            date=date_str, indexValue=absolute_value
+                        )
                     )
-                    formatted_results.append(data_point)
+                    formatted_results.append(
+                        data_point
+                    )  # Assuming append is the correct method
                 except ValueError as e:
                     print(f"⚠️ Date invalide détectée : {row['date']} -> {e}")
+                except Exception as e:
+                    print(
+                        "⚠️ Erreur lors de la création du "
+                        f"TheoreticalConsumptionData : {e}"
+                    )
 
         return formatted_results

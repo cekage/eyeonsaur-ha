@@ -1,10 +1,11 @@
 """Tests unitaires pour la fonction check_credentials du config flow."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from custom_components.eyeonsaur.config_flow import check_credentials
+import pytest
 from saur_client import SaurApiError
+
+from custom_components.eyeonsaur.config_flow import check_credentials
 
 
 async def test_check_credentials_success() -> None:

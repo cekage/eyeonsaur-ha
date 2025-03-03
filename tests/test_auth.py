@@ -1,5 +1,5 @@
 import pytest
-from saur_client import SaurClient, SaurApiError
+from saur_client import SaurApiError, SaurClient
 
 
 async def test_saur_client_authentication_minimal() -> None:

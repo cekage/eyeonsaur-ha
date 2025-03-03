@@ -84,14 +84,20 @@ async def check_credentials(
         await client._authenticate()
         _LOGGER.debug("2/x _async_get_deliverypoints_data")
     except SaurApiError as err:
-        _LOGGER.error(  # Utilise _LOGGER.error au lieu de .exception
-            "Erreur lors de la récupération des données: %s", err
-        )
         if "unauthorized" in str(err).lower():
+            _LOGGER.error(
+                "Erreur lors de la récupération des données: %s", err
+            )  # Utilise _LOGGER.error au lieu de .exception
             raise  # Pour l'authentification, on relance
-        raise  # Pour toute autre erreur, on relance
+        else:
+            # Unexpected SaurApiError: log the exception and re-raise
+            _LOGGER.exception(
+                "Erreur lors de la récupération des données: %s", err
+            )  # Utilise _LOGGER.exception
+            raise  # Pour toute autre erreur, on relance
     except ClientConnectorError as err:
-        _LOGGER.error(
+        # Connection error: log the exception and re-raise
+        _LOGGER.exception(
             "Erreur de connexion lors de la récupération des données : %s",
             err,
         )

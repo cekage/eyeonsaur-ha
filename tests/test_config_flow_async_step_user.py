@@ -16,7 +16,6 @@ from custom_components.eyeonsaur.helpers.const import (
     ENTRY_LOGIN,
     ENTRY_PASS,
     ENTRY_TOKEN,
-    ENTRY_UNDERSTAND,
 )
 
 
@@ -117,7 +116,7 @@ async def test_async_step_user_auth_success_no_client_id(
         assert result["step_id"] == "user"
         assert result["data_schema"] == STEP_USER_DATA_SCHEMA
         assert (
-            result["errors"] == None
+            result["errors"] is None
         )  # Expect empty errors, as in the original code
 
 

@@ -1,7 +1,5 @@
 """Tests unitaires pour la fonction first_check_input du config flow."""
 
-import pytest
-
 from custom_components.eyeonsaur.config_flow import first_check_input
 from custom_components.eyeonsaur.helpers.const import ENTRY_LOGIN, ENTRY_PASS
 

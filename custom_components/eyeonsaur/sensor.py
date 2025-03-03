@@ -133,7 +133,7 @@ class EyeOnSaurSensor(CoordinatorEntity[SaurCoordinator], SensorEntity):
         }.get(self._sensor_type, self._sensor_type)
 
     @cached_property
-    def available(self) -> bool:  # paayright: ignore
+    def available(self) -> bool:  # pyright: ignore
         """Return if entity is available."""
         return True
 

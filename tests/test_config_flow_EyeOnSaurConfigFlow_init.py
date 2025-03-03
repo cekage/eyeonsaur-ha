@@ -4,11 +4,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.data_entry_flow import FlowResultType
-from saur_client import SaurApiError, SaurClient
+from saur_client import SaurApiError
 
 from custom_components.eyeonsaur.config_flow import EyeOnSaurConfigFlow
 from custom_components.eyeonsaur.helpers.const import (
-    DOMAIN,
     ENTRY_LOGIN,
     ENTRY_PASS,
 )
@@ -93,4 +92,4 @@ async def test_check_online_credentials_generic_error() -> None:
         result = await flow.async_step_user(user_input)
 
     assert result["type"] == FlowResultType.FORM
-    assert result["errors"] == None
+    assert result["errors"] is None

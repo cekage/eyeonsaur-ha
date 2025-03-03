@@ -1,11 +1,9 @@
 """Tests unitaires pour la fonction create_saur_client du config flow."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from saur_client import SaurClient
 
 from custom_components.eyeonsaur.config_flow import create_saur_client
-from custom_components.eyeonsaur.helpers.const import DEV  # Importe DEV
-from saur_client import SaurClient
 
 
 @pytest.mark.asyncio  # AJOUT du marker @pytest.mark.asyncio pour rendre les tests asynchrones
