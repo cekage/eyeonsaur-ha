@@ -29,11 +29,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await coordinator.async_config_entry_first_refresh()
 
-    # Set up platforms
+    # Set up platforms (creates sensor entities)
     await hass.config_entries.async_forward_entry_setups(
         entry,
         PLATFORMS,
     )
+
+    # Inject historical data AFTER entities exist
+    await coordinator.async_inject_all_historical_data()
 
     # Add listener for config and options updates
     entry.async_on_unload(

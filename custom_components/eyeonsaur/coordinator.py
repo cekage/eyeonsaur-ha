@@ -19,6 +19,7 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util.dt import as_local
 from homeassistant.util.dt import now as hass_now
 from saur_client import (
+    SaurApiError,
     SaurClient,
     SaurResponseContracts,
     SaurResponseDelivery,
@@ -171,8 +172,8 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
 
             # Créer un device pour le compteur
             device_info = DeviceInfo(
-                identifiers={(DOMAIN, compteur.clientReference)},
-                name=f"Contrat {compteur.clientReference}",
+                identifiers={(DOMAIN, compteur.contractId)},
+                name=f"Contrat {compteur.contractName} ({compteur.contractId})",
                 manufacturer="EyeOnSaur",
                 model="Contrat",
                 entry_type=DeviceEntryType.SERVICE,
@@ -199,6 +200,39 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
             self._background_tasks.append(task)
         # await asyncio.gather(*self._background_tasks)
         await super().async_config_entry_first_refresh()
+
+    async def async_inject_all_historical_data(self) -> None:
+        """Injecte les données historiques pour tous les compteurs.
+
+        Doit être appelé APRÈS la création des entités (async_forward_entry_setups),
+        car l'injection nécessite que les entités existent dans le registre HA.
+        """
+        # Attendre que les tâches de fond (fetch + store SQLite) soient terminées
+        if self._background_tasks:
+            _LOGGER.debug(
+                "Attente de %d tâches de fond avant injection...",
+                len(self._background_tasks),
+            )
+            await asyncio.gather(*self._background_tasks, return_exceptions=True)
+
+        for compteur in self._cached_data.compteurs:
+            if compteur.isContractTerminated:
+                continue
+
+            all_consumptions: TheoreticalConsumptionDatas = (
+                await self.db_helper.async_get_all_consumptions_with_absolute(
+                    compteur.sectionId
+                )
+            )
+            if all_consumptions:
+                _LOGGER.debug(
+                    "Injection des données historiques pour %s (%d entrées)",
+                    compteur.sectionId,
+                    len(all_consumptions),
+                )
+                await self._async_inject_historical_data(
+                    all_consumptions, compteur
+                )
 
     async def _async_update_data(self) -> SaurData:
         """Fetch data from the API and update the database."""
@@ -323,7 +357,7 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
             monthly_data: SaurResponseMonthly = (
                 await self.client.get_monthly_data(year, month, section_id)
             )
-        except ClientResponseError:
+        except (ClientResponseError, SaurApiError):
             # Ajoute à la blacklist en cas d'erreur
             self.blacklisted_months.add((year, month))
             _LOGGER.warning(
@@ -379,8 +413,6 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
             "🔥🔥 TheoreticalConsumptionDatas  %s 🔥🔥",
             all_consumptions,
         )
-        # Recalculate all historical data
-        await self._async_inject_historical_data(all_consumptions, compteur)
 
         # Détecte et traite les jours manquants
         await self._async_handle_missing_dates(all_consumptions, compteur)
@@ -410,8 +442,10 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
             )
         else:
             # Entité non trouvée
-            _LOGGER.debug(
-                "_async_inject_historical_data : Entité non trouvée."
+            _LOGGER.warning(
+                "_async_inject_historical_data : Entité non trouvée pour %s. "
+                "L'injection des données historiques est ignorée.",
+                f"{compteur.serial_number}_water_statistics",
             )
             return
 
@@ -529,23 +563,13 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
             *last_tasks, return_exceptions=True
         )
 
-        filtered_delivery_results = [
-            d for d in delivery_results if isinstance(d, dict)
-        ]
-        filtered_last_results = [
-            d for d in last_results if isinstance(d, dict)
-        ]
-
         # 3. Mettre à jour les compteurs avec les données DELIVERY et LAST
         updated_compteurs: list[Compteur] = []
-        for i, (delivery_data, last_data) in enumerate(
-            zip(filtered_delivery_results, filtered_last_results, strict=False)
-            # zip(delivery_results, last_results, strict=False)
-        ):
-            compteur = compteurs[i]
+        for i, compteur in enumerate(compteurs):
+            delivery_data = delivery_results[i]
+            last_data = last_results[i]
 
-            if isinstance(delivery_data, HomeAssistantError):
-                # Gestion de l'erreur DELIVERY : on log mais on continue
+            if isinstance(delivery_data, Exception):
                 _LOGGER.error(
                     "Erreur lors de la mise à jour du compteur %s avec les "
                     "données DELIVERY: %s. Utilisation des anciennes données.",
@@ -553,11 +577,9 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
                     delivery_data,
                 )
             else:
-                # on utilise la methode update_delivery de la class Compteur
                 compteur.update_delivery(delivery_data)
 
-            if isinstance(last_data, HomeAssistantError):
-                # Gestion de l'erreur LAST : on log l'erreur mais on continue
+            if isinstance(last_data, Exception):
                 _LOGGER.error(
                     "Erreur lors de la mise à jour du compteur %s avec les "
                     "données LAST: %s. Utilisation des anciennes données.",
@@ -565,7 +587,6 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
                     last_data,
                 )
             else:
-                # on utilise la methode update_last de la class Compteur
                 compteur.update_last(last_data)
 
             updated_compteurs.append(compteur)

@@ -52,7 +52,7 @@ async def async_setup_entry(
             name=f"Compteur {compteur.serial_number}",
             manufacturer=compteur.manufacturer,
             model=compteur.model,
-            via_device=(DOMAIN, compteur.clientReference),
+            via_device=(DOMAIN, compteur.contractId),
             serial_number=compteur.serial_number,
             sw_version=compteur.sectionId,
         )
@@ -188,7 +188,7 @@ class SaurStatisticsSensor(SensorEntity):
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_suggested_display_precision = 2
     _attr_should_poll = False
-    _attr_disabled_by_default = True
+    _attr_disabled_by_default = False
     _attr_native_value = None  # Jamais de valeur
 
     def __init__(
