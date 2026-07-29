@@ -261,7 +261,9 @@ class SaurDatabaseHelper:
 
         query = """
             WITH Anchor AS (
-            SELECT date, value FROM anchor_value WHERE section_id = ?
+            SELECT date, value FROM anchor_value
+            WHERE section_id = ?
+            ORDER BY date DESC LIMIT 1
             ),
             ConsumptionsWithCumulative AS (
             SELECT
@@ -271,21 +273,22 @@ class SaurDatabaseHelper:
                 AS cumulative_relative
             FROM consumptions c WHERE c.section_id = ?
             ),
-            AbsoluteValues AS (
-            SELECT
-                cw.date, cw.relative_value,
-                CASE
-                WHEN cw.date = (SELECT date FROM Anchor)
-                THEN (SELECT value FROM Anchor)
-                ELSE (SELECT value FROM Anchor) + cw.cumulative_relative
-                - (SELECT cumulative_relative
-                    FROM ConsumptionsWithCumulative
-                    WHERE date = (SELECT date FROM Anchor))
-                END AS absolute_value
-            FROM ConsumptionsWithCumulative cw
+            ReferenceCumulative AS (
+            SELECT cumulative_relative
+            FROM ConsumptionsWithCumulative
+            WHERE date <= (SELECT date FROM Anchor)
+            ORDER BY date DESC
+            LIMIT 1
             )
-            SELECT date, relative_value, absolute_value FROM AbsoluteValues
-            ORDER BY date DESC;
+            SELECT
+                cw.date,
+                cw.relative_value,
+                COALESCE((SELECT value FROM Anchor), 0)
+                    + cw.cumulative_relative
+                    - COALESCE((SELECT cumulative_relative FROM ReferenceCumulative), 0)
+                    AS absolute_value
+            FROM ConsumptionsWithCumulative cw
+            ORDER BY cw.date DESC;
         """
 
         results = await self._async_execute_query(
@@ -323,11 +326,13 @@ class SaurDatabaseHelper:
                         data_point
                     )  # Assuming append is the correct method
                 except ValueError as e:
-                    print(f"⚠️ Date invalide détectée : {row['date']} -> {e}")
+                    _LOGGER.error(
+                        "Date invalide détectée : %s -> %s", row["date"], e
+                    )
                 except Exception as e:
-                    print(
-                        "⚠️ Erreur lors de la création du "
-                        f"TheoreticalConsumptionData : {e}"
+                    _LOGGER.error(
+                        "Erreur lors de la création du "
+                        "TheoreticalConsumptionData : %s", e
                     )
 
         return formatted_results
