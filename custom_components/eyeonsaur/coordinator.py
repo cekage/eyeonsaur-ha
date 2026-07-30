@@ -189,14 +189,36 @@ class SaurCoordinator(DataUpdateCoordinator[SaurData]):
             date_installation = as_local(
                 datetime.fromisoformat(compteur.releve_physique.date)
             )
-            task = self.hass.async_create_task(
-                self._async_fetch_monthly_data(
-                    year=date_installation.year,
-                    month=date_installation.month,
-                    compteur=compteur,
-                )
+
+            # --- Correctif ---
+            # Le backfill automatique via "missing_dates" ne progresse
+            # que s'il y a déjà des données pour détecter des trous.
+            # Si le mois d'installation est vide, il ne va jamais
+            # chercher les mois suivants. On force donc ici la
+            # récupération de TOUS les mois entre l'installation
+            # et aujourd'hui.
+            year_cursor, month_cursor = (
+                date_installation.year,
+                date_installation.month,
             )
-            self._background_tasks.append(task)
+            now_local = as_local(datetime.now())
+            while (year_cursor, month_cursor) <= (
+                now_local.year,
+                now_local.month,
+            ):
+                task = self.hass.async_create_task(
+                    self._async_fetch_monthly_data(
+                        year=year_cursor,
+                        month=month_cursor,
+                        compteur=compteur,
+                    )
+                )
+                self._background_tasks.append(task)
+                if month_cursor == 12:
+                    year_cursor += 1
+                    month_cursor = 1
+                else:
+                    month_cursor += 1
         # await asyncio.gather(*self._background_tasks)
         await super().async_config_entry_first_refresh()
 
